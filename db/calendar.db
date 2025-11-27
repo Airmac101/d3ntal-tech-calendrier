@@ -1,14 +1,8 @@
-import sqlite3
-
-# Path to the database
-DB_NAME = "db/calendar.db"  # Make sure the DB is inside the 'db' folder
-
 def init_db():
-    # Connect to the SQLite database (it will create the database file if it doesn't exist)
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_db()
     c = conn.cursor()
-
-    # Create the users table if it doesn't exist
+    
+    # Create users table if not exists
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,8 +12,8 @@ def init_db():
             password TEXT
         )
     """)
-
-    # Create the appointments table if it doesn't exist
+    
+    # Create appointments table if not exists
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,20 +23,14 @@ def init_db():
             notes TEXT
         )
     """)
-
-    # Create the appointment_users table if it doesn't exist (to link users to appointments)
+    
+    # Create appointment_users table (to link users to appointments)
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
             appointment_id INTEGER,
             user_email TEXT
         )
     """)
-
-    # Commit changes and close connection
+    
     conn.commit()
     conn.close()
-
-# Call the function to initialize the database
-init_db()
-
-print("Database and tables created successfully!")
