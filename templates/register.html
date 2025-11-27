@@ -19,13 +19,9 @@
             text-align: center;
         }
         h2 {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
-        p {
-            font-size: 14px;
-            color: #555;
-        }
-        input {
+        input, button {
             width: 100%;
             padding: 12px;
             margin-top: 10px;
@@ -49,7 +45,17 @@
             display: block;
             margin-top: 15px;
             text-decoration: none;
-            color: #004aad;
+        }
+        .password-container {
+            display: flex;
+            align-items: center;
+        }
+        .password-container input {
+            flex: 1;
+        }
+        .password-container i {
+            cursor: pointer;
+            padding: 0 10px;
         }
     </style>
 </head>
@@ -57,17 +63,37 @@
 
 <div class="box">
     <h2>Inscription collaborateur</h2>
-    <p>Entrez votre prénom, nom et email professionnel pour recevoir vos accès sécurisés.</p>
+    <p>Entrez vos informations pour recevoir vos accès sécurisés.</p>
 
-    <form method="POST" action="/register">
-        <input type="text" name="first_name" placeholder="Prénom" required>
-        <input type="text" name="last_name" placeholder="Nom" required>
-        <input type="email" name="email" placeholder="Adresse email professionnelle" required>
+    <form method="POST">
+        <input type="text" name="first_name" required placeholder="Prénom">
+        <input type="text" name="last_name" required placeholder="Nom">
+        <input type="email" name="email" required placeholder="Adresse email professionnelle">
+        
+        <!-- Password with show/hide option -->
+        <div class="password-container">
+            <input type="password" name="password" id="password" required placeholder="Mot de passe" />
+            <i id="togglePassword" class="fa fa-eye"></i>
+        </div>
+        
         <button type="submit">Créer mon accès</button>
     </form>
 
     <a href="/login">Déjà inscrit ? Se connecter</a>
 </div>
+
+<script>
+    const togglePassword = document.getElementById("togglePassword");
+    const password = document.getElementById("password");
+    
+    togglePassword.addEventListener("click", function() {
+        // Toggle password visibility
+        const type = password.type === "password" ? "text" : "password";
+        password.type = type;
+        // Toggle eye icon
+        this.classList.toggle("fa-eye-slash");
+    });
+</script>
 
 </body>
 </html>
