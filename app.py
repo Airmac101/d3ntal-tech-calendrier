@@ -77,6 +77,7 @@ def home():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    email_sent = False  # Variable to track if email was sent
     if request.method == "POST":
         first_name = request.form.get("first_name")
         last_name = request.form.get("last_name")
@@ -106,11 +107,13 @@ def register():
 
         try:
             mail.send(msg)
+            email_sent = True  # Set the flag to True if email was sent successfully
             app.logger.info(f"Email successfully sent to {email}")  # Log the email sent event
         except Exception as e:
             app.logger.error(f"Error sending email: {e}")  # Log any errors during email sending
 
-        return redirect("/login?success=1")
+        # Pass email_sent to the success page
+        return render_template("login.html", success=True, email_sent=email_sent)
 
     return render_template("register.html")
 
