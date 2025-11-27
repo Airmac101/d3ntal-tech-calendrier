@@ -18,55 +18,7 @@ body {
     text-align: center;
 }
 
-/* Header Styling */
-h1, h2 {
-    font-size: 1.8em;
-    color: #004aad;
-    margin-bottom: 20px;
-    font-weight: bold;
-}
-
-/* Form Inputs */
-input, button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-}
-
-input:focus, button:focus {
-    outline: none;
-    border: 1px solid #004aad;
-}
-
-/* Button Styling */
-button {
-    background-color: #004aad;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #003380;
-}
-
-/* Links */
-a {
-    color: #004aad;
-    text-decoration: none;
-    font-size: 14px;
-    margin-top: 15px;
-    display: block;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Calendar Styling */
+/* Calendar Styles */
 .calendar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
