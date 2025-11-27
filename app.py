@@ -2,35 +2,19 @@ from flask import Flask, render_template, request, session, redirect
 import sqlite3
 import calendar
 from datetime import datetime
-from flask_mail import Mail, Message
-import logging
 
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
 
-# ---------------- Gmail SMTP Configuration ----------------
-
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465  # For SSL
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USERNAME'] = 'denismeuret@d3ntal-tech.fr'  # Your Gmail address
-app.config['MAIL_PASSWORD'] = 'wdfzgicvpdkjoiyk'  # Your Gmail app password
-app.config['MAIL_DEFAULT_SENDER'] = 'denismeuret@d3ntal-tech.fr'
-
-mail = Mail(app)
-
-# ---------------- Database Configuration ----------------
-
 DB_NAME = "calendar.db"  # Ensure this points to your database file
 
+# ---------------- DATABASE ----------------
 def get_db():
     return sqlite3.connect(DB_NAME)
 
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    
     # Create users table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -67,154 +51,92 @@ def init_db():
 # Initialize the database
 init_db()
 
-# ---------------- Routes ----------------
-
-@app.route("/")
-def home():
-    if "user" not in session:
-        return redirect("/login")
-    return render_template("index.html")
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    email_sent = False  # Variable to track if email was sent
-    if request.method == "POST":
-        first_name = request.form.get("first_name")
-        last_name = request.form.get("last_name")
-        email = request.form.get("email")
-
-        # Generate a random password for the user
-        password = "randomGeneratedPassword123"  # Replace this with actual password generation logic if needed
-
-        conn = get_db()
-        cur = conn.cursor()
-
-        # Check if email already exists
-        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
-        if cur.fetchone():
-            conn.close()
-            return redirect("/login?already=1")
-
-        # Insert new user into the database
-        cur.execute("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-                    (first_name, last_name, email, password))  # Store the generated password
-        conn.commit()
-        conn.close()
-
-        # Send welcome email after successful registration
-        msg = Message("Welcome to D3NTAL TECH!", recipients=[email])
-        msg.body = f"Hello {first_name},\n\nWelcome to D3NTAL TECH! Your account has been created successfully.\n\nYour login details are as follows:\nEmail: {email}\nPassword: {password}\n\nBest Regards,\nD3NTAL TECH Team"
-
-        try:
-            mail.send(msg)
-            email_sent = True  # Set the flag to True if email was sent successfully
-            app.logger.info(f"Email successfully sent to {email}")  # Log the email sent event
-        except Exception as e:
-            app.logger.error(f"Error sending email: {e}")  # Log any errors during email sending
-
-        # Pass email_sent to the success page
-        return render_template("login.html", success=True, email_sent=email_sent)
-
-    return render_template("register.html")
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    error = None
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
-        user = cur.fetchone()
-        conn.close()
-
-        if user:
-            session["user"] = email
-            return redirect("/calendar")
-        else:
-            error = "Identifiants invalides"
-    return render_template("login.html", error=error)
+# ---------------- ROUTES ----------------
 
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
     if "user" not in session:
         return redirect("/login")
 
-    today = datetime.today()
-    year = int(request.args.get("year", today.year))
-    month = int(request.args.get("month", today.month))
+    try:
+        # Get current date and year/month from URL
+        today = datetime.today()
+        year = int(request.args.get("year", today.year))
+        month = int(request.args.get("month", today.month))
 
-    month_name = calendar.month_name[month]
+        # Get the month's name for display
+        month_name = calendar.month_name[month]
 
-    prev_month = month - 1 if month > 1 else 12
-    prev_year = year - 1 if month == 1 else year
+        # Navigate between months
+        prev_month = month - 1 if month > 1 else 12
+        prev_year = year - 1 if month == 1 else year
+        next_month = month + 1 if month < 12 else 1
+        next_year = year + 1 if month == 12 else year
 
-    next_month = month + 1 if month < 12 else 1
-    next_year = year + 1 if month == 12 else year
+        # Get the calendar days and check if any events are associated with those days
+        cal = calendar.monthcalendar(year, month)
+        calendar_days = []
+        for week in cal:
+            for day in week:
+                if day != 0:
+                    date_key = f"{year}-{month:02d}-{day:02d}"
+                    conn = get_db()
+                    cur = conn.cursor()
+                    cur.execute("SELECT * FROM appointments WHERE date = ?", (date_key,))
+                    events = cur.fetchall()
+                    has_event = len(events) > 0
+                    calendar_days.append({
+                        "day": day,
+                        "has_event": has_event
+                    })
+                    conn.close()
 
-    # Get calendar days and check if any events are associated with those days
-    cal = calendar.monthcalendar(year, month)
-    calendar_days = []
-    for week in cal:
-        for day in week:
-            if day != 0:
-                date_key = f"{year}-{month:02d}-{day:02d}"
-                conn = get_db()
-                cur = conn.cursor()
-                cur.execute("SELECT * FROM appointments WHERE date = ?", (date_key,))
-                events = cur.fetchall()
-                has_event = len(events) > 0
-                calendar_days.append({
-                    "day": day,
-                    "has_event": has_event
-                })
-                conn.close()
+        # Handle new event creation if POST request
+        if request.method == "POST":
+            event_date = request.form.get("event_date")
+            event_time = request.form.get("event_time")
+            event_title = request.form.get("event_title")
+            event_notes = request.form.get("event_notes")
+            collaborators = request.form.getlist("collaborators")
+            
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO appointments (date, time, title, notes) VALUES (?, ?, ?, ?)",
+                        (event_date, event_time, event_title, event_notes))
+            appointment_id = cur.lastrowid
 
-    # Handle new event creation
-    if request.method == "POST":
-        event_date = request.form.get("event_date")
-        event_time = request.form.get("event_time")
-        event_title = request.form.get("event_title")
-        event_notes = request.form.get("event_notes")
-        collaborators = request.form.getlist("collaborators")
+            # Add the collaborators to the event
+            for collaborator in collaborators:
+                cur.execute("INSERT INTO appointment_users (appointment_id, user_email) VALUES (?, ?)",
+                            (appointment_id, collaborator))
 
+            conn.commit()
+            conn.close()
+
+            return redirect("/calendar")
+
+        # Fetch all users to allow selection of collaborators for the event
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("INSERT INTO appointments (date, time, title, notes) VALUES (?, ?, ?, ?)",
-                    (event_date, event_time, event_title, event_notes))
-        appointment_id = cur.lastrowid
-
-        # Add the collaborators to the event
-        for collaborator in collaborators:
-            cur.execute("INSERT INTO appointment_users (appointment_id, user_email) VALUES (?, ?)",
-                        (appointment_id, collaborator))
-
-        conn.commit()
+        cur.execute("SELECT email FROM users")
+        all_users = [row[0] for row in cur.fetchall()]
         conn.close()
 
-        return redirect("/calendar")
-
-    # Fetch all users to allow selection of collaborators for the event
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT email FROM users")
-    all_users = [row[0] for row in cur.fetchall()]
-    conn.close()
-
-    return render_template(
-        "calendar.html",
-        year=year,
-        month=month,
-        month_name=month_name,
-        calendar_days=calendar_days,
-        prev_month=prev_month,
-        prev_year=prev_year,
-        next_month=next_month,
-        next_year=next_year,
-        all_users=all_users
-    )
+        return render_template(
+            "calendar.html",
+            year=year,
+            month=month,
+            month_name=month_name,
+            calendar_days=calendar_days,
+            prev_month=prev_month,
+            prev_year=prev_year,
+            next_month=next_month,
+            next_year=next_year,
+            all_users=all_users
+        )
+    except Exception as e:
+        print(f"Error in calendar_view route: {e}")
+        return "An error occurred while loading the calendar. Please try again."
 
 if __name__ == "__main__":
     app.run(debug=True)
