@@ -1,63 +1,123 @@
-/* Global body styling */
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f7fa; /* Soft background */
-    color: #2c3e50;
+    font-family: Arial, sans-serif;
+    background-color: #f4f7fc;
     margin: 0;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
 }
 
-/* Container for centering elements */
 .container {
-    max-width: 600px;
-    text-align: center;
-    background-color: white;
-    padding: 40px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-box {
+    background: #ffffff;
+    padding: 30px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
-/* Title and subtitle styling */
 h2 {
-    font-size: 28px;
-    color: #3498db;
-    margin-bottom: 20px;
+    color: #333;
 }
 
-p {
-    color: #7f8c8d;
-    margin-bottom: 20px;
-}
-
-input, button {
+.input-field {
     width: 100%;
     padding: 12px;
-    margin-top: 10px;
+    margin: 10px 0;
     border-radius: 6px;
     border: 1px solid #ccc;
+    font-size: 16px;
 }
 
-button {
-    background-color: #3498db;
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
     color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #2980b9;
+.submit-btn:hover {
+    background-color: #0056b3;
 }
 
-a {
-    display: block;
-    margin-top: 15px;
+.alternative-action {
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.alternative-action a {
+    color: #007bff;
     text-decoration: none;
-    color: #3498db;
 }
 
-a:hover {
+.alternative-action a:hover {
     text-decoration: underline;
+}
+
+/* Calendar Styling */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.nav-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.nav-btn:hover {
+    background-color: #0056b3;
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.calendar-table th, .calendar-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.calendar-table th {
+    background-color: #f8f9fa;
+}
+
+.calendar-day {
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.calendar-day:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.calendar-day.has-event {
+    background-color: #d4edda;
+}
+
+.calendar-day .day-link {
+    text-decoration: none;
+    color: inherit;
+    font-size: 16px;
 }
