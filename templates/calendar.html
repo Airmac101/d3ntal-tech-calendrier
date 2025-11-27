@@ -32,7 +32,7 @@
                         {% for day in week %}
                             <td class="calendar-day {% if day.day %}has-event{% endif %}">
                                 {% if day.day %}
-                                    <a href="#" class="day-link">{{ day.day }}</a>
+                                    <a href="#" class="day-link" onclick="openEventForm({{ day.day }})">{{ day.day }}</a>
                                 {% else %}
                                     <span>&nbsp;</span>
                                 {% endif %}
@@ -42,6 +42,33 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- Event Creation Form -->
+        <div id="eventForm" class="event-form">
+            <h3>Créer un événement</h3>
+            <form method="POST">
+                <input type="date" name="event_date" id="event_date" required>
+                <input type="time" name="event_time" id="event_time" required>
+                <input type="text" name="event_title" id="event_title" placeholder="Objet / Titre de l'événement" required>
+                <textarea name="event_notes" id="event_notes" placeholder="Détails supplémentaires (optionnel)"></textarea>
+
+                <label for="collaborators">Choisissez un ou plusieurs collaborateurs:</label>
+                <select name="collaborators" id="collaborators" multiple required>
+                    {% for user in all_users %}
+                        <option value="{{ user }}">{{ user }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="submit-btn">Créer l'événement</button>
+            </form>
+        </div>
     </div>
+
+    <script>
+        function openEventForm(day) {
+            document.getElementById("eventForm").style.display = "block";
+            document.getElementById("event_date").value = "{{ year }}-" + ("0" + "{{ month }}").slice(-2) + "-" + ("0" + day).slice(-2);
+        }
+    </script>
 </body>
 </html>
