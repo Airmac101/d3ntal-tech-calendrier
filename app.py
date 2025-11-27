@@ -3,27 +3,26 @@ import sqlite3
 import smtplib
 from email.mime.text import MIMEText
 import os
-from random import choice
+import random
 import string
+from datetime import datetime
+import calendar
 
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
 
 DB_NAME = "calendar.db"
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USER = os.environ.get("SMTP_USER")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-
 
 # ---------------- DATABASE ----------------
 
 def get_db():
     return sqlite3.connect(DB_NAME)
 
+# Initialize the database if needed
 def init_db():
     conn = get_db()
     c = conn.cursor()
+    # Create users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +32,7 @@ def init_db():
             password TEXT
         )
     """)
+    # Create appointments table
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,14 +44,17 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Initialize the database
 init_db()
 
 
 # ---------------- EMAIL ----------------
 
+# Function to generate a random password
 def generate_password():
-    return ''.join(choice(string.ascii_letters + string.digits) for i in range(8))  # Password length = 8
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
 
+# Function to send an email with the password
 def send_password_email(to_email, password):
     try:
         msg = MIMEText(f"""
@@ -67,13 +70,13 @@ https://d3ntal-tech-calendrier-1.onrender.com/login
 """)
 
         msg["Subject"] = "Accès collaborateur D3NTAL TECH"
-        msg["From"] = SMTP_USER
+        msg["From"] = os.environ.get("SMTP_USER")
         msg["To"] = to_email
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, to_email, msg.as_string())
+        server.login(os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASSWORD"))
+        server.sendmail(os.environ.get("SMTP_USER"), to_email, msg.as_string())
         server.quit()
         return True
     except Exception as e:
@@ -83,11 +86,12 @@ https://d3ntal-tech-calendrier-1.onrender.com/login
 
 # ---------------- ROUTES ----------------
 
+# Route for home page
 @app.route("/")
 def home():
     return render_template("index.html")
 
-
+# Route for registration page
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -95,21 +99,26 @@ def register():
         last_name = request.form.get("last_name")
         email = request.form.get("email")
 
-        password = generate_password()  # Generate a random password
+        # Generate a password
+        password = generate_password()
 
+        # Connect to the database and insert the new user
         conn = get_db()
         cur = conn.cursor()
 
+        # Check if the email is already registered
         cur.execute("SELECT * FROM users WHERE email = ?", (email,))
         if cur.fetchone():
             conn.close()
             return redirect("/login?already=1")
 
+        # Insert the new user into the database
         cur.execute("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
                     (first_name, last_name, email, password))
         conn.commit()
         conn.close()
 
+        # Send email with password to the user
         send_password_email(email, password)
 
         return redirect("/login?success=1")
@@ -117,6 +126,7 @@ def register():
     return render_template("register.html")
 
 
+# Route for login page
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -138,9 +148,10 @@ def login():
     return render_template("login.html", error=error)
 
 
+# Route for calendar view
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
-    if "user" not in session:
+    if "user" not in session:  # Check if the user is logged in
         return redirect("/login")
 
     # Get the current month and year, or from the URL arguments
@@ -190,6 +201,7 @@ def calendar_view():
     )
 
 
+# Route to logout
 @app.route("/logout")
 def logout():
     session.clear()
