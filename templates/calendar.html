@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Calendrier - D3NTAL TECH</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>Calendrier : {{ month_name }} {{ year }}</h1>
+
+<div class="navigation">
+    <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}">Mois précédent</a>
+    <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}">Mois suivant</a>
+</div>
+
+<div class="calendar">
+    <div class="calendar-header">Lun</div>
+    <div class="calendar-header">Mar</div>
+    <div class="calendar-header">Mer</div>
+    <div class="calendar-header">Jeu</div>
+    <div class="calendar-header">Ven</div>
+    <div class="calendar-header">Sam</div>
+    <div class="calendar-header">Dim</div>
+
+    {% for day_info in calendar_days %}
+        {% if day_info.day %}
+            <div class="calendar-day {% if day_info.has_event %}has-event{% endif %}">
+                {{ day_info.day }}
+            </div>
+        {% else %}
+            <div class="calendar-day"></div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+</body>
+</html>
