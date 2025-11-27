@@ -98,14 +98,13 @@ def calendar_view():
             event_title = request.form.get("event_title")
             event_notes = request.form.get("event_notes")
             collaborators = request.form.getlist("collaborators")
-            
+
             conn = get_db()
             cur = conn.cursor()
             cur.execute("INSERT INTO appointments (date, time, title, notes) VALUES (?, ?, ?, ?)",
                         (event_date, event_time, event_title, event_notes))
             appointment_id = cur.lastrowid
 
-            # Add the collaborators to the event
             for collaborator in collaborators:
                 cur.execute("INSERT INTO appointment_users (appointment_id, user_email) VALUES (?, ?)",
                             (appointment_id, collaborator))
@@ -134,9 +133,10 @@ def calendar_view():
             next_year=next_year,
             all_users=all_users
         )
+    
     except Exception as e:
         print(f"Error in calendar_view route: {e}")
-        return "An error occurred while loading the calendar. Please try again."
+        return f"An error occurred: {e}"
 
 if __name__ == "__main__":
     app.run(debug=True)
