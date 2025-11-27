@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
 
-DB_NAME = "db/calendar.db"  # Correct path to the calendar.db
+DB_NAME = "calendar.db"  # Ensure this points to your database file
 
 # ---------------- DATABASE ----------------
 
@@ -17,7 +17,8 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    # Create users table
+    
+    # Create users table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,7 +28,8 @@ def init_db():
             password TEXT
         )
     """)
-    # Create appointments table
+    
+    # Create appointments table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,13 +39,15 @@ def init_db():
             notes TEXT
         )
     """)
-    # Create appointment_users table (to link users to appointments)
+    
+    # Create appointment_users table (to link users to appointments) if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
             appointment_id INTEGER,
             user_email TEXT
         )
     """)
+    
     conn.commit()
     conn.close()
 
@@ -52,6 +56,14 @@ init_db()
 
 # ---------------- ROUTES ----------------
 
+# Home Route
+@app.route("/")
+def home():
+    if "user" not in session:
+        return redirect("/login")
+    return render_template("index.html")
+
+# Registration Route
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -78,6 +90,7 @@ def register():
 
     return render_template("register.html")
 
+# Login Route
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -98,6 +111,7 @@ def login():
             error = "Identifiants invalides"
     return render_template("login.html", error=error)
 
+# Calendar Route
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
     if "user" not in session:
@@ -177,5 +191,6 @@ def calendar_view():
         all_users=all_users
     )
 
+# Run the Flask application
 if __name__ == "__main__":
     app.run(debug=True)
