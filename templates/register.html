@@ -4,64 +4,17 @@
     <meta charset="UTF-8">
     <title>Inscription collaborateur - D3NTAL TECH</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f1f1f1;
-        }
-
-        .box {
-            max-width: 420px;
-            margin: 80px auto;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        a {
-            display: block;
-            margin-top: 15px;
-            text-decoration: none;
-        }
-    </style>
 </head>
 <body>
 
 <div class="box">
     <h2>Inscription collaborateur</h2>
-    <p>Entrez vos informations pour créer un compte.</p>
-
     <form method="POST">
-        <input type="text" name="prenom" placeholder="Prénom" required>
-        <input type="text" name="nom" placeholder="Nom" required>
-        <input type="email" name="email" placeholder="Adresse email professionnelle" required>
+        <input type="text" name="first_name" placeholder="Prénom" required>
+        <input type="text" name="last_name" placeholder="Nom" required>
+        <input type="email" name="email" placeholder="Email collaborateur" required>
         <button type="submit">Créer mon accès</button>
     </form>
-
     <a href="/login">Déjà inscrit ? Se connecter</a>
 </div>
 
