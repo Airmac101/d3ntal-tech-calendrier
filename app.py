@@ -2,9 +2,24 @@ from flask import Flask, render_template, request, session, redirect
 import sqlite3
 import calendar
 from datetime import datetime
+from flask_mail import Mail, Message  # Add Flask-Mail import
 
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
+
+# ---------------- SMTP Configuration ----------------
+
+# Gmail SMTP Configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465  # For SSL
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USERNAME'] = 'your_email@gmail.com'  # Your Gmail address
+app.config['MAIL_PASSWORD'] = 'your_app_password'  # Your Gmail app password (not the Gmail account password)
+app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
+
+# Initialize Flask-Mail
+mail = Mail(app)
 
 DB_NAME = "calendar.db"  # Ensure this points to your database file
 
@@ -85,6 +100,14 @@ def register():
                     (first_name, last_name, email, "default_password"))  # Password can be changed after registration
         conn.commit()
         conn.close()
+
+        # Send welcome email after successful registration
+        msg = Message("Welcome to D3NTAL TECH!", recipients=[email])
+        msg.body = f"Hello {first_name},\n\nWelcome to D3NTAL TECH! Your account has been created successfully.\n\nBest Regards,\nD3NTAL TECH Team"
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Error sending email: {e}")
 
         return redirect("/login?success=1")
 
