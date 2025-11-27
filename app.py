@@ -16,18 +16,23 @@ SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 
-# ---------------- DATABASE ----------------
+# ---------- DATABASE ----------
 
 def get_db():
     return sqlite3.connect(DB_NAME)
 
+
 def init_db():
     conn = get_db()
     c = conn.cursor()
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prenom TEXT,
+            nom TEXT,
             email TEXT UNIQUE,
+            adresse TEXT,
             password TEXT
         )
     """)
@@ -37,23 +42,24 @@ def init_db():
 init_db()
 
 
-# ---------------- EMAIL ----------------
+# ---------- EMAIL ----------
 
 def send_password_email(to_email):
     try:
-        msg = MIMEText(f"""
+        body = f"""
 Bienvenue sur D3NTAL TECH ✅
 
-Votre accès collaborateur a été créé.
+Votre accès collaborateur est créé :
 
 Email : {to_email}
 Mot de passe : {PASSWORD_GLOBAL}
 
-Connectez-vous ici :
+Connexion :
 https://d3ntal-tech-calendrier-1.onrender.com/login
-""")
+"""
 
-        msg["Subject"] = "Accès collaborateur D3NTAL TECH"
+        msg = MIMEText(body)
+        msg["Subject"] = "Accès D3NTAL TECH"
         msg["From"] = SMTP_USER
         msg["To"] = to_email
 
@@ -62,13 +68,11 @@ https://d3ntal-tech-calendrier-1.onrender.com/login
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.sendmail(SMTP_USER, to_email, msg.as_string())
         server.quit()
-        return True
     except Exception as e:
-        print("ERREUR SMTP :", e)
-        return False
+        print("SMTP error:", e)
 
 
-# ---------------- ROUTES ----------------
+# ---------- ROUTES ----------
 
 @app.route("/")
 def home():
@@ -78,23 +82,29 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        prenom = request.form.get("prenom")
+        nom = request.form.get("nom")
         email = request.form.get("email")
+        adresse = request.form.get("adresse")
 
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+        cur.execute("SELECT id FROM users WHERE email = ?", (email,))
         if cur.fetchone():
             conn.close()
-            return redirect("/login?already=1")
+            return redirect("/login")
 
-        cur.execute("INSERT INTO users (email, password) VALUES (?, ?)",
-                    (email, PASSWORD_GLOBAL))
+        cur.execute("""
+            INSERT INTO users (prenom, nom, email, adresse, password)
+            VALUES (?, ?, ?, ?, ?)
+        """, (prenom, nom, email, adresse, PASSWORD_GLOBAL))
+
         conn.commit()
         conn.close()
 
         send_password_email(email)
-        return redirect("/login?success=1")
+        return redirect("/login")
 
     return render_template("register.html")
 
@@ -107,12 +117,13 @@ def login():
 
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
+        cur.execute("SELECT prenom, nom FROM users WHERE email = ? AND password = ?", (email, password))
         user = cur.fetchone()
         conn.close()
 
         if user:
             session["user"] = email
+            session["nom_complet"] = f"{user[0]} {user[1]}"
             return redirect("/dashboard")
 
     return render_template("login.html")
@@ -122,7 +133,8 @@ def login():
 def dashboard():
     if "user" not in session:
         return redirect("/login")
-    return render_template("dashboard.html")
+
+    return render_template("dashboard.html", nom=session.get("nom_complet"))
 
 
 @app.route("/logout")
@@ -131,14 +143,5 @@ def logout():
     return redirect("/login")
 
 
-@app.route("/test-email")
-def test_email():
-    result = send_password_email(SMTP_USER)
-    if result:
-        return "✅ EMAIL TEST ENVOYÉ"
-    else:
-        return "❌ ECHEC SMTP"
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)
