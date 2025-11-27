@@ -29,13 +29,8 @@
             border: 1px solid #ccc;
         }
         button {
-            margin-top: 20px;
             background: #007bff;
             color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
             cursor: pointer;
         }
         button:hover {
@@ -46,16 +41,15 @@
             margin-top: 15px;
             text-decoration: none;
         }
-        .password-container {
-            display: flex;
-            align-items: center;
+        .password-field {
+            position: relative;
         }
-        .password-container input {
-            flex: 1;
-        }
-        .password-container i {
+        .eye-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
             cursor: pointer;
-            padding: 0 10px;
         }
     </style>
 </head>
@@ -63,19 +57,24 @@
 
 <div class="box">
     <h2>Inscription collaborateur</h2>
-    <p>Entrez vos informations pour recevoir vos accès sécurisés.</p>
+    <p>Entrez vos informations pour créer un compte.</p>
 
     <form method="POST">
+        <!-- Prénom -->
         <input type="text" name="first_name" required placeholder="Prénom">
+
+        <!-- Nom -->
         <input type="text" name="last_name" required placeholder="Nom">
+
+        <!-- Email -->
         <input type="email" name="email" required placeholder="Adresse email professionnelle">
-        
-        <!-- Password with show/hide option -->
-        <div class="password-container">
-            <input type="password" name="password" id="password" required placeholder="Mot de passe" />
-            <i id="togglePassword" class="fa fa-eye"></i>
+
+        <!-- Mot de passe -->
+        <div class="password-field">
+            <input type="password" id="password" name="password" required placeholder="Mot de passe">
+            <span class="eye-icon" id="eye-icon" onclick="togglePassword()">👁️</span>
         </div>
-        
+
         <button type="submit">Créer mon accès</button>
     </form>
 
@@ -83,16 +82,17 @@
 </div>
 
 <script>
-    const togglePassword = document.getElementById("togglePassword");
-    const password = document.getElementById("password");
-    
-    togglePassword.addEventListener("click", function() {
-        // Toggle password visibility
-        const type = password.type === "password" ? "text" : "password";
-        password.type = type;
-        // Toggle eye icon
-        this.classList.toggle("fa-eye-slash");
-    });
+    function togglePassword() {
+        var passwordField = document.getElementById("password");
+        var eyeIcon = document.getElementById("eye-icon");
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+            eyeIcon.innerText = "🙈";  // "Hide" icon
+        } else {
+            passwordField.type = "password";
+            eyeIcon.innerText = "👁️";  // "Show" icon
+        }
+    }
 </script>
 
 </body>
