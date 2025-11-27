@@ -4,90 +4,21 @@
     <meta charset="UTF-8">
     <title>Connexion collaborateur - D3NTAL TECH</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #eef3f8;
-        }
-        .box {
-            max-width: 420px;
-            margin: 80px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        h2 {
-            margin-bottom: 20px;
-        }
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        a {
-            display: block;
-            margin-top: 15px;
-            text-decoration: none;
-        }
-        .password-field {
-            position: relative;
-        }
-        .eye-icon {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-        }
-    </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>Connexion collaborateur</h2>
-    <p>Entrez vos identifiants pour accéder à votre compte.</p>
-
+    <h2>Connexion à votre compte</h2>
     <form method="POST">
-        <!-- Email -->
-        <input type="email" name="email" required placeholder="Adresse email professionnelle">
-
-        <!-- Mot de passe -->
-        <div class="password-field">
-            <input type="password" id="password" name="password" required placeholder="Mot de passe">
-            <span class="eye-icon" id="eye-icon" onclick="togglePassword()">👁️</span>
-        </div>
-
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Mot de passe" required>
+        {% if error %}
+            <p style="color:red;">{{ error }}</p>
+        {% endif %}
         <button type="submit">Se connecter</button>
     </form>
-
-    <a href="/register">Pas encore inscrit ? Créer un compte</a>
+    <a href="/register">Pas encore inscrit ? Créez votre compte</a>
 </div>
-
-<script>
-    function togglePassword() {
-        var passwordField = document.getElementById("password");
-        var eyeIcon = document.getElementById("eye-icon");
-        if (passwordField.type === "password") {
-            passwordField.type = "text";
-            eyeIcon.innerText = "🙈";  // "Hide" icon
-        } else {
-            passwordField.type = "password";
-            eyeIcon.innerText = "👁️";  // "Show" icon
-        }
-    }
-</script>
 
 </body>
 </html>
