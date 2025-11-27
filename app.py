@@ -6,17 +6,17 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
 
-DB_NAME = "calendar.db"
+DB_NAME = "db/calendar.db"  # Correct path to the calendar.db
 
 # ---------------- DATABASE ----------------
 
 def get_db():
     return sqlite3.connect(DB_NAME)
 
+# Initialize the database if needed
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    
     # Create users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -27,7 +27,6 @@ def init_db():
             password TEXT
         )
     """)
-    
     # Create appointments table
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
@@ -38,7 +37,6 @@ def init_db():
             notes TEXT
         )
     """)
-    
     # Create appointment_users table (to link users to appointments)
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
@@ -46,7 +44,6 @@ def init_db():
             user_email TEXT
         )
     """)
-    
     conn.commit()
     conn.close()
 
