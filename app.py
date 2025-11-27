@@ -1,135 +1,23 @@
 from flask import Flask, render_template, request, session, redirect
 import sqlite3
-import smtplib
-from email.mime.text import MIMEText
-import os
 import calendar
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_par_defaut")
+app.secret_key = "cle_secrete_par_defaut"
 
 DB_NAME = "calendar.db"
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USER = os.environ.get("SMTP_USER")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-PASSWORD_GLOBAL = "Calendar@1010!!"  # Le mot de passe généré pour l'utilisateur
-
 
 # ---------------- DATABASE ----------------
 
 def get_db():
     return sqlite3.connect(DB_NAME)
 
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            first_name TEXT,
-            last_name TEXT,
-            email TEXT UNIQUE,
-            password TEXT
-        )
-    """)
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            time TEXT,
-            title TEXT,
-            notes TEXT
-        )
-    """)
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS appointment_users (
-            appointment_id INTEGER,
-            user_email TEXT
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-init_db()
-
-
-# ---------------- EMAIL ----------------
-
-def send_password_email(to_email, password):
-    try:
-        msg = MIMEText(f"""
-Bienvenue sur D3NTAL TECH ✅
-
-Votre accès collaborateur a été créé.
-
-Email : {to_email}
-Mot de passe : {password}
-
-Connectez-vous ici :
-https://d3ntal-tech-calendrier.onrender.com/login
-""")
-
-        msg["Subject"] = "Accès collaborateur D3NTAL TECH"
-        msg["From"] = SMTP_USER
-        msg["To"] = to_email
-
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, to_email, msg.as_string())
-        server.quit()
-        return True
-    except Exception as e:
-        print("ERREUR SMTP :", e)
-        return False
-
-
 # ---------------- ROUTES ----------------
 
 @app.route("/")
 def home():
     return render_template("index.html")
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        first_name = request.form.get("first_name")
-        last_name = request.form.get("last_name")
-        email = request.form.get("email")
-
-        # Vérifier si l'email existe déjà
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
-        if cur.fetchone():
-            conn.close()
-            return redirect("/login?already=1")  # Si l'email existe déjà
-
-        # Générer un mot de passe pour l'utilisateur
-        password = "GeneratedPassword123!"  # Exemple de mot de passe généré
-
-        # Insérer le nouvel utilisateur
-        cur.execute("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-                    (first_name, last_name, email, password))
-        conn.commit()
-        conn.close()
-
-        # Envoyer un email avec le mot de passe généré
-        send_password_email(email, password)
-
-        return redirect("/login?success=1")
-
-    return render_template("register.html")
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -151,6 +39,33 @@ def login():
             error = "Identifiants invalides"
     return render_template("login.html", error=error)
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        prenom = request.form.get("prenom")
+        nom = request.form.get("nom")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+        if cur.fetchone():
+            conn.close()
+            return redirect("/login?already=1")
+
+        cur.execute("INSERT INTO users (prenom, nom, email, password) VALUES (?, ?, ?, ?)",
+                    (prenom, nom, email, password))
+        conn.commit()
+        conn.close()
+
+        # Envoi de l'email avec mot de passe
+        send_password_email(email, password)
+
+        return redirect("/login?success=1")
+
+    return render_template("register.html")
 
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
@@ -200,11 +115,40 @@ def calendar_view():
         next_year=next_year,
     )
 
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
+
+# ---------------- EMAIL ----------------
+
+def send_password_email(to_email, password):
+    try:
+        msg = MIMEText(f"""
+Bienvenue sur D3NTAL TECH ✅
+
+Votre accès collaborateur a été créé.
+
+Email : {to_email}
+Mot de passe : {password}
+
+Connectez-vous ici :
+https://d3ntal-tech-calendrier.onrender.com/login
+""")
+
+        msg["Subject"] = "Accès collaborateur D3NTAL TECH"
+        msg["From"] = SMTP_USER
+        msg["To"] = to_email
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print("ERREUR SMTP :", e)
+        return False
 
 
 if __name__ == "__main__":
