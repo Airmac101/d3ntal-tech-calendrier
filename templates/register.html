@@ -7,18 +7,20 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="box">
-        <h2>Inscription collaborateur</h2>
-        <p>Entrez vos informations pour créer un compte.</p>
+    <div class="container">
+        <div class="form-box">
+            <h2>Inscription collaborateur</h2>
+            <p>Entrez vos informations pour créer un compte.</p>
 
-        <form method="POST">
-            <input type="text" name="first_name" required placeholder="Prénom">
-            <input type="text" name="last_name" required placeholder="Nom">
-            <input type="email" name="email" required placeholder="Adresse email professionnelle">
-            <button type="submit">Créer mon accès</button>
-        </form>
+            <form method="POST">
+                <input type="text" name="first_name" required placeholder="Prénom" class="input-field">
+                <input type="text" name="last_name" required placeholder="Nom" class="input-field">
+                <input type="email" name="email" required placeholder="Adresse email professionnelle" class="input-field">
+                <button type="submit" class="submit-btn">Créer mon accès</button>
+            </form>
 
-        <a href="/login">Déjà inscrit ? Se connecter</a>
+            <p class="alternative-action">Déjà inscrit ? <a href="/login" class="login-link">Se connecter</a></p>
+        </div>
     </div>
 </body>
 </html>
