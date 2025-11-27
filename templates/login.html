@@ -4,64 +4,23 @@
     <meta charset="UTF-8">
     <title>Connexion - D3NTAL TECH</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #eef3f8;
-        }
-        .box {
-            max-width: 420px;
-            margin: 80px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        h2 {
-            margin-bottom: 15px;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-        button {
-            margin-top: 20px;
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        a {
-            display: block;
-            margin-top: 15px;
-            text-decoration: none;
-            color: #004aad;
-        }
-    </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>Connexion collaborateur</h2>
+    <h2>Connexion</h2>
 
     <form method="POST">
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Mot de passe" required>
-
-        <button type="submit">Connexion</button>
+        <input type="email" name="email" required placeholder="Adresse email">
+        <input type="password" name="password" required placeholder="Mot de passe">
+        <button type="submit">Se connecter</button>
     </form>
 
-    <a href="/register">Créer un compte</a>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <a href="/register">Pas encore inscrit ? Créez un compte</a>
 </div>
 
 </body>
