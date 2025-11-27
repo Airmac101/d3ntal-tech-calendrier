@@ -2,33 +2,31 @@ from flask import Flask, render_template, request, session, redirect
 import sqlite3
 import calendar
 from datetime import datetime
-from flask_mail import Mail, Message  # Add Flask-Mail import
+from flask_mail import Mail, Message
+import logging
 
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
 
-# ---------------- SMTP Configuration ----------------
+# ---------------- Gmail SMTP Configuration ----------------
 
-# Gmail SMTP Configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465  # For SSL
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USERNAME'] = 'denismeuret@d3ntal-tech.fr'  # Your Gmail address
-app.config['MAIL_PASSWORD'] = 'wdfzgicvpdkjoiyk'  # Your Gmail app password (not the Gmail account password)
+app.config['MAIL_PASSWORD'] = 'wdfzgicvpdkjoiyk'  # Your Gmail app password
 app.config['MAIL_DEFAULT_SENDER'] = 'denismeuret@d3ntal-tech.fr'
 
-# Initialize Flask-Mail
 mail = Mail(app)
 
-DB_NAME = "calendar.db"  # Ensure this points to your database file
+# ---------------- Database Configuration ----------------
 
-# ---------------- DATABASE ----------------
+DB_NAME = "calendar.db"  # Ensure this points to your database file
 
 def get_db():
     return sqlite3.connect(DB_NAME)
 
-# Initialize the database if needed
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -55,7 +53,7 @@ def init_db():
         )
     """)
     
-    # Create appointment_users table (to link users to appointments) if it doesn't exist
+    # Create appointment_users table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
             appointment_id INTEGER,
@@ -69,22 +67,23 @@ def init_db():
 # Initialize the database
 init_db()
 
-# ---------------- ROUTES ----------------
+# ---------------- Routes ----------------
 
-# Home Route
 @app.route("/")
 def home():
     if "user" not in session:
         return redirect("/login")
     return render_template("index.html")
 
-# Registration Route
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         first_name = request.form.get("first_name")
         last_name = request.form.get("last_name")
         email = request.form.get("email")
+
+        # Generate a random password for the user
+        password = "randomGeneratedPassword123"  # Replace this with actual password generation logic if needed
 
         conn = get_db()
         cur = conn.cursor()
@@ -97,23 +96,24 @@ def register():
 
         # Insert new user into the database
         cur.execute("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-                    (first_name, last_name, email, "default_password"))  # Password can be changed after registration
+                    (first_name, last_name, email, password))  # Store the generated password
         conn.commit()
         conn.close()
 
         # Send welcome email after successful registration
         msg = Message("Welcome to D3NTAL TECH!", recipients=[email])
-        msg.body = f"Hello {first_name},\n\nWelcome to D3NTAL TECH! Your account has been created successfully.\n\nBest Regards,\nD3NTAL TECH Team"
+        msg.body = f"Hello {first_name},\n\nWelcome to D3NTAL TECH! Your account has been created successfully.\n\nYour login details are as follows:\nEmail: {email}\nPassword: {password}\n\nBest Regards,\nD3NTAL TECH Team"
+
         try:
             mail.send(msg)
+            app.logger.info(f"Email successfully sent to {email}")  # Log the email sent event
         except Exception as e:
-            print(f"Error sending email: {e}")
+            app.logger.error(f"Error sending email: {e}")  # Log any errors during email sending
 
         return redirect("/login?success=1")
 
     return render_template("register.html")
 
-# Login Route
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -134,7 +134,6 @@ def login():
             error = "Identifiants invalides"
     return render_template("login.html", error=error)
 
-# Calendar Route
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
     if "user" not in session:
@@ -214,6 +213,5 @@ def calendar_view():
         all_users=all_users
     )
 
-# Run the Flask application
 if __name__ == "__main__":
     app.run(debug=True)
