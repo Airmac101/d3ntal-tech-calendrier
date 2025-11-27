@@ -19,7 +19,11 @@
             text-align: center;
         }
         h2 {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 14px;
+            color: #555;
         }
         input {
             width: 100%;
@@ -45,6 +49,7 @@
             display: block;
             margin-top: 15px;
             text-decoration: none;
+            color: #004aad;
         }
     </style>
 </head>
@@ -52,10 +57,14 @@
 
 <div class="box">
     <h2>Inscription collaborateur</h2>
-    <p>Entrez votre email professionnel pour recevoir vos accès.</p>
+    <p>Création d'accès sécurisé D3NTAL TECH</p>
 
-    <form method="POST">
-        <input type="email" name="email" required placeholder="Email collaborateur">
+    <form method="POST" action="/register">
+        <input type="text" name="prenom" placeholder="Prénom" required>
+        <input type="text" name="nom" placeholder="Nom" required>
+        <input type="email" name="email" placeholder="Adresse email professionnelle" required>
+        <input type="text" name="adresse" placeholder="Adresse complète" required>
+
         <button type="submit">Créer mon accès</button>
     </form>
 
