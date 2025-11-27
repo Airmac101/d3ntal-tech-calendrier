@@ -1,147 +1,71 @@
-from flask import Flask, render_template, request, redirect, session
-import sqlite3
-import smtplib
-from email.mime.text import MIMEText
-import os
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription collaborateur - D3NTAL TECH</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef3f8;
+        }
+        .box {
+            max-width: 420px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 14px;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            margin-top: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        a {
+            display: block;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #004aad;
+        }
+    </style>
+</head>
+<body>
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_par_defaut")
+<div class="box">
+    <h2>Inscription collaborateur</h2>
+    <p>Entrez votre email professionnel pour recevoir vos accès sécurisés.</p>
 
-DB_NAME = "calendar.db"
-PASSWORD_GLOBAL = "Calendar@1010!!"
+    <form method="POST" action="/register">
+        <input type="email" name="email" placeholder="Adresse email professionnelle" required>
+        <button type="submit">Créer mon accès</button>
+    </form>
 
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USER = os.environ.get("SMTP_USER")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+    <a href="/login">Déjà inscrit ? Se connecter</a>
+</div>
 
-
-# ---------- DATABASE ----------
-
-def get_db():
-    return sqlite3.connect(DB_NAME)
-
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            prenom TEXT,
-            nom TEXT,
-            email TEXT UNIQUE,
-            adresse TEXT,
-            password TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()
-
-
-# ---------- EMAIL ----------
-
-def send_password_email(to_email):
-    try:
-        body = f"""
-Bienvenue sur D3NTAL TECH ✅
-
-Votre accès collaborateur est créé :
-
-Email : {to_email}
-Mot de passe : {PASSWORD_GLOBAL}
-
-Connexion :
-https://d3ntal-tech-calendrier-1.onrender.com/login
-"""
-
-        msg = MIMEText(body)
-        msg["Subject"] = "Accès D3NTAL TECH"
-        msg["From"] = SMTP_USER
-        msg["To"] = to_email
-
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, to_email, msg.as_string())
-        server.quit()
-    except Exception as e:
-        print("SMTP error:", e)
-
-
-# ---------- ROUTES ----------
-
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        prenom = request.form.get("prenom")
-        nom = request.form.get("nom")
-        email = request.form.get("email")
-        adresse = request.form.get("adresse")
-
-        conn = get_db()
-        cur = conn.cursor()
-
-        cur.execute("SELECT id FROM users WHERE email = ?", (email,))
-        if cur.fetchone():
-            conn.close()
-            return redirect("/login")
-
-        cur.execute("""
-            INSERT INTO users (prenom, nom, email, adresse, password)
-            VALUES (?, ?, ?, ?, ?)
-        """, (prenom, nom, email, adresse, PASSWORD_GLOBAL))
-
-        conn.commit()
-        conn.close()
-
-        send_password_email(email)
-        return redirect("/login")
-
-    return render_template("register.html")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT prenom, nom FROM users WHERE email = ? AND password = ?", (email, password))
-        user = cur.fetchone()
-        conn.close()
-
-        if user:
-            session["user"] = email
-            session["nom_complet"] = f"{user[0]} {user[1]}"
-            return redirect("/dashboard")
-
-    return render_template("login.html")
-
-
-@app.route("/dashboard")
-def dashboard():
-    if "user" not in session:
-        return redirect("/login")
-
-    return render_template("dashboard.html", nom=session.get("nom_complet"))
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+</body>
+</html>
