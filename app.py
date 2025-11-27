@@ -19,6 +19,7 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
+    
     # Create users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -29,6 +30,7 @@ def init_db():
             password TEXT
         )
     """)
+    
     # Create appointments table
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
@@ -39,6 +41,7 @@ def init_db():
             notes TEXT
         )
     """)
+    
     # Create appointment_users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
@@ -46,6 +49,7 @@ def init_db():
             user_email TEXT
         )
     """)
+    
     conn.commit()
     conn.close()
 
@@ -54,6 +58,36 @@ init_db()
 
 
 # ---------------- ROUTES ----------------
+
+@app.route("/")
+def home():
+    return redirect("/login")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
+        user = cur.fetchone()
+        conn.close()
+
+        if user:
+            session["user"] = email
+            return redirect("/calendar")
+        else:
+            error = "Identifiants invalides"
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
 
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
@@ -116,8 +150,8 @@ def calendar_view():
     # Fetch users for the dropdown
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT email FROM users")
-    all_users = [row[0] for row in cur.fetchall()]
+    cur.execute("SELECT email, first_name, last_name FROM users")
+    all_users = cur.fetchall()
     conn.close()
 
     return render_template(
@@ -133,4 +167,6 @@ def calendar_view():
         all_users=all_users
     )
 
-# Additional routes for login, logout, etc.
+
+if __name__ == "__main__":
+    app.run(debug=True)
