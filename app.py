@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import smtplib
 from email.mime.text import MIMEText
@@ -50,7 +50,7 @@ Email : {to_email}
 Mot de passe : {PASSWORD_GLOBAL}
 
 Connectez-vous ici :
-https://d3ntal-tech-calendrier.onrender.com/login
+https://d3ntal-tech-calendrier-1.onrender.com/login
 """)
 
         msg["Subject"] = "Accès collaborateur D3NTAL TECH"
@@ -94,7 +94,6 @@ def register():
         conn.close()
 
         send_password_email(email)
-
         return redirect("/login?success=1")
 
     return render_template("register.html")
@@ -132,7 +131,6 @@ def logout():
     return redirect("/login")
 
 
-# ✅ ROUTE TEST SMTP
 @app.route("/test-email")
 def test_email():
     result = send_password_email(SMTP_USER)
@@ -143,4 +141,4 @@ def test_email():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)
