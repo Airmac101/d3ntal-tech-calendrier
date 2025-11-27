@@ -5,12 +5,13 @@ from datetime import datetime
 import os
 import smtplib
 from email.mime.text import MIMEText
+import random
+import string
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_par_defaut")
 
 DB_NAME = "calendar.db"
-PASSWORD_GLOBAL = "Calendar@1010!!"  # Le mot de passe est défini ici, mais peut être généré dynamiquement.
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -22,7 +23,6 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 def get_db():
     return sqlite3.connect(DB_NAME)
-
 
 def create_tables():
     conn = get_db()
@@ -61,7 +61,12 @@ create_tables()
 
 # ---------------- EMAIL ----------------
 
-def send_password_email(to_email):
+def generate_password():
+    """Génère un mot de passe aléatoire de 12 caractères."""
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(characters) for i in range(12))
+
+def send_password_email(to_email, password):
     try:
         msg = MIMEText(f"""
 Bienvenue sur D3NTAL TECH ✅
@@ -69,7 +74,7 @@ Bienvenue sur D3NTAL TECH ✅
 Votre accès collaborateur a été créé.
 
 Email : {to_email}
-Mot de passe : {PASSWORD_GLOBAL}
+Mot de passe : {password}
 
 Connectez-vous ici :
 https://d3ntal-tech-calendrier.onrender.com/login
@@ -133,12 +138,17 @@ def register():
             conn.close()
             return redirect("/login?already=1")
 
+        # Génération d'un mot de passe aléatoire
+        password = generate_password()
+
+        # Insérer l'utilisateur dans la base de données
         cur.execute("INSERT INTO users (prenom, nom, email, password) VALUES (?, ?, ?, ?)",
-                    (prenom, nom, email, PASSWORD_GLOBAL))  # Le mot de passe est ici statique, à adapter si besoin
+                    (prenom, nom, email, password))
         conn.commit()
         conn.close()
 
-        send_password_email(email)
+        # Envoi de l'email avec le mot de passe
+        send_password_email(email, password)
 
         return redirect("/login?success=1")
 
@@ -150,21 +160,18 @@ def calendar_view():
     if "user" not in session:
         return redirect("/login")
 
-    # Get the current month and year, or from the URL arguments
     today = datetime.today()
     year = int(request.args.get("year", today.year))
     month = int(request.args.get("month", today.month))
 
     month_name = calendar.month_name[month]
 
-    # Navigate between months
     prev_month = month - 1 if month > 1 else 12
     prev_year = year - 1 if month == 1 else year
 
     next_month = month + 1 if month < 12 else 1
     next_year = year + 1 if month == 12 else year
 
-    # Get the days of the month and check for events
     cal = calendar.monthcalendar(year, month)
 
     calendar_days = []
