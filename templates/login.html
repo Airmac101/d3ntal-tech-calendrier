@@ -7,17 +7,19 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="box">
-        <h2>Connexion collaborateur</h2>
-        <p>Entrez vos informations pour vous connecter.</p>
+    <div class="container">
+        <div class="form-box">
+            <h2>Connexion collaborateur</h2>
+            <p>Entrez vos informations pour vous connecter.</p>
 
-        <form method="POST">
-            <input type="email" name="email" required placeholder="Adresse email">
-            <input type="password" name="password" required placeholder="Mot de passe">
-            <button type="submit">Se connecter</button>
-        </form>
+            <form method="POST">
+                <input type="email" name="email" required placeholder="Adresse email" class="input-field">
+                <input type="password" name="password" required placeholder="Mot de passe" class="input-field">
+                <button type="submit" class="submit-btn">Se connecter</button>
+            </form>
 
-        <a href="/register">Pas encore inscrit ? Créer un compte</a>
+            <p class="alternative-action">Pas encore inscrit ? <a href="/register" class="register-link">Créer un compte</a></p>
+        </div>
     </div>
 </body>
 </html>
