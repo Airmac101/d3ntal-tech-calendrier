@@ -1,44 +1,30 @@
-/* static/style.css */
-
 body {
     font-family: Arial, sans-serif;
     background-color: #f1f1f1;
 }
 
-.box {
-    max-width: 420px;
-    margin: 80px auto;
-    background: #ffffff;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: 10px;
     text-align: center;
 }
 
-h2 {
-    margin-bottom: 20px;
+.calendar-header {
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
-input, button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-
-button {
-    background-color: #007bff;
-    color: white;
+.calendar-day {
+    padding: 10px;
+    border: 1px solid #ddd;
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #0056b3;
+.calendar-day:hover {
+    background-color: #f1f1f1;
 }
 
-a {
-    display: block;
-    margin-top: 15px;
-    text-decoration: none;
+.has-event {
+    background-color: #ffcc00;
 }
