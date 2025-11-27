@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription collaborateur - D3NTAL TECH</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef3f8;
+        }
+        .box {
+            max-width: 420px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            margin-top: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        a {
+            display: block;
+            margin-top: 15px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Inscription collaborateur</h2>
+    <p>Entrez votre email professionnel pour recevoir vos accès.</p>
+
+    <form method="POST">
+        <input type="email" name="email" required placeholder="Email collaborateur">
+        <button type="submit">Créer mon accès</button>
+    </form>
+
+    <a href="/login">Déjà inscrit ? Se connecter</a>
+</div>
+
+</body>
+</html>

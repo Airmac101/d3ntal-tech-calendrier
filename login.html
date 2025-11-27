@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion collaborateur</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+
+        <h2>Connexion collaborateur</h2>
+
+        {% if request.args.get('success') %}
+            <div class="alert success">
+                ✅ Inscription réussie - Vous pouvez vous connecter
+            </div>
+        {% endif %}
+
+        {% if request.args.get('already') %}
+            <div class="alert warning">
+                ⚠️ Collaborateur déjà enregistré
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <label>Email :</label>
+            <input type="email" name="email" required>
+
+            <label>Mot de passe :</label>
+            <input type="password" name="password" required>
+
+            <button type="submit" class="btn">Se connecter</button>
+        </form>
+
+        <p class="footer">
+            Pas encore inscrit ? <a href="/register">Créer un compte</a>
+        </p>
+
+    </div>
+</div>
+</body>
+</html>
+
