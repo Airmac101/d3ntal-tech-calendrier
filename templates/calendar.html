@@ -8,13 +8,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Calendrier Collaboratif</h1>
-        <div class="calendar-navigation">
-            <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}">Mois précédent</a>
+        <div class="calendar-header">
+            <button class="nav-btn" onclick="window.location.href='{{ url_for('calendar_view', year=prev_year, month=prev_month) }}'">Précédent</button>
             <h2>{{ month_name }} {{ year }}</h2>
-            <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}">Mois suivant</a>
+            <button class="nav-btn" onclick="window.location.href='{{ url_for('calendar_view', year=next_year, month=next_month) }}'">Suivant</button>
         </div>
-        <table>
+
+        <table class="calendar-table">
             <thead>
                 <tr>
                     <th>Lun</th>
@@ -28,17 +28,17 @@
             </thead>
             <tbody>
                 {% for week in calendar_days|batch(7) %}
-                <tr>
-                    {% for day in week %}
-                    <td>
-                        {% if day.day %}
-                        <a href="#">{{ day.day }}</a>
-                        {% else %}
-                        <span>&nbsp;</span>
-                        {% endif %}
-                    </td>
-                    {% endfor %}
-                </tr>
+                    <tr>
+                        {% for day in week %}
+                            <td class="calendar-day {% if day.day %}has-event{% endif %}">
+                                {% if day.day %}
+                                    <a href="#" class="day-link">{{ day.day }}</a>
+                                {% else %}
+                                    <span>&nbsp;</span>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
