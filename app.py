@@ -28,6 +28,8 @@ def init_db():
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name TEXT,
+            last_name TEXT,
             email TEXT UNIQUE,
             password TEXT
         )
@@ -52,7 +54,7 @@ Email : {to_email}
 Mot de passe : {PASSWORD_GLOBAL}
 
 Connectez-vous ici :
-https://d3ntal-tech-calendrier-1.onrender.com/login
+https://d3ntal-tech-calendrier.onrender.com/login
 """
 
         msg = MIMEText(body)
@@ -79,6 +81,8 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
         email = request.form.get("email")
 
         conn = get_db()
@@ -90,9 +94,9 @@ def register():
             return redirect("/login?already=1")
 
         cur.execute("""
-            INSERT INTO users (email, password)
-            VALUES (?, ?)
-        """, (email, PASSWORD_GLOBAL))
+            INSERT INTO users (first_name, last_name, email, password)
+            VALUES (?, ?, ?, ?)
+        """, (first_name, last_name, email, PASSWORD_GLOBAL))
 
         conn.commit()
         conn.close()
@@ -112,7 +116,7 @@ def login():
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
-            SELECT id FROM users
+            SELECT * FROM users
             WHERE email = ? AND password = ?
         """, (email, password))
 
@@ -142,4 +146,3 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
- 
