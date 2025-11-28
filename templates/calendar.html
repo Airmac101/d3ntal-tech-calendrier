@@ -1,26 +1,27 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Calendar - D3NTAL TECH</title>
-    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div style="text-align:center; margin-top:20px;">
-        <h1>Calendar - D3NTAL TECH</h1>
-        <h2>{{ month_name }} {{ year }}</h2>
-        <div class="calendar">
-            {% for week in calendar_days %}
-                <div class="week">
-                    {% for day in week %}
-                        <div class="day {% if day.has_event %} event {% endif %}">
-                            {{ day.day }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-        </div>
-        <a href="/logout">Logout</a>
-    </div>
+
+<h1>Calendar - D3NTAL TECH</h1>
+
+<h2>{{ month_name }} {{ year }}</h2>
+
+<table border="1" cellpadding="10">
+    {% for week in calendar_days %}
+    <tr>
+        {% for day in week %}
+        <td>{{ day.day }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+
+<br>
+<a href="/logout">Logout</a>
+
 </body>
 </html>
