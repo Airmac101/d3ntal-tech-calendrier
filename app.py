@@ -47,6 +47,11 @@ init_db()
 
 # ---------------- ROUTES ----------------
 
+# Root route - redirect to /calendar
+@app.route("/", methods=["GET"])
+def index():
+    return redirect("/calendar")  # Redirecting to the /calendar page
+
 # Log all routes to verify route mappings
 @app.before_request
 def log_routes():
@@ -135,3 +140,4 @@ def calendar_view():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
