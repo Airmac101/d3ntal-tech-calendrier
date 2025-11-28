@@ -57,7 +57,7 @@ init_db()
 
 # ---------------- ROUTES ----------------
 
-# Root route - redirect to /calendar
+# Root route - redirect to /login if not logged in
 @app.route("/", methods=["GET"])
 def index():
     if "user" not in session:
@@ -79,10 +79,11 @@ def login():
 
             if user:
                 session["user"] = user[0]  # Store user ID in session
-                return redirect("/calendar")
+                flash("Login successful!", "success")
+                return redirect("/calendar")  # Redirect to calendar if login is successful
             else:
                 flash("Invalid credentials. Please try again.", "danger")
-                return render_template("login.html")
+                return render_template("login.html")  # Show login page again with error
 
     return render_template("login.html")
 
@@ -115,7 +116,7 @@ def register():
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
     if "user" not in session:
-        return redirect("/login")
+        return redirect("/login")  # Redirect to login if not logged in
 
     today = datetime.today()
     year = int(request.args.get("year", today.year))
