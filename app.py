@@ -61,15 +61,8 @@ init_db()
 @app.route("/", methods=["GET"])
 def index():
     if "user" not in session:
-        return redirect("/login")
-    return redirect("/calendar")
-
-# Log all routes to verify route mappings
-@app.before_request
-def log_routes():
-    print("Registered Routes:")
-    for rule in app.url_map.iter_rules():
-        print(rule)
+        return redirect("/login")  # If not logged in, redirect to login page
+    return redirect("/calendar")  # If logged in, go to the calendar
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
