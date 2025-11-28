@@ -1,57 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ month_name }} {{ year }} Calendar</title>
+    <title>Calendar - D3NTAL TECH</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Calendar for {{ month_name }} {{ year }}</h1>
-
-    <div>
-        <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}">Previous Month</a>
-        <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}">Next Month</a>
+    <div style="text-align:center; margin-top:20px;">
+        <h1>Calendar - D3NTAL TECH</h1>
+        <h2>{{ month_name }} {{ year }}</h2>
+        <div class="calendar">
+            {% for week in calendar_days %}
+                <div class="week">
+                    {% for day in week %}
+                        <div class="day {% if day.has_event %} event {% endif %}">
+                            {{ day.day }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        <a href="/logout">Logout</a>
     </div>
-
-    <table border="1">
-        <tr>
-            <th>Sun</th>
-            <th>Mon</th>
-            <th>Tue</th>
-            <th>Wed</th>
-            <th>Thu</th>
-            <th>Fri</th>
-            <th>Sat</th>
-        </tr>
-        {% for week in calendar_days %}
-        <tr>
-            {% for day in week %}
-                <td>
-                    {% if day.has_event %}
-                        <strong>{{ day.day }}</strong>
-                    {% else %}
-                        {{ day.day }}
-                    {% endif %}
-                </td>
-            {% endfor %}
-        </tr>
-        {% endfor %}
-    </table>
-
-    <form method="POST">
-        <h2>Create New Event</h2>
-        <input type="date" name="event_date" required>
-        <input type="time" name="event_time" required>
-        <input type="text" name="event_title" placeholder="Event Title" required>
-        <textarea name="event_notes" placeholder="Event Notes"></textarea>
-        
-        <select name="collaborators" multiple>
-            {% for user in all_users %}
-                <option value="{{ user }}">{{ user }}</option>
-            {% endfor %}
-        </select>
-
-        <button type="submit">Create Event</button>
-    </form>
 </body>
 </html>
