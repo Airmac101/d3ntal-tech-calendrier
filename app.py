@@ -1,10 +1,21 @@
-from flask import Flask, render_template, request, session, redirect
+from flask import Flask, render_template, request, session, redirect, flash
 import sqlite3
 import calendar
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
+
+# ---------------- MAIL SETUP ----------------
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = 'your_email@gmail.com'  # Replace with your email
+app.config['MAIL_PASSWORD'] = 'your_email_password'  # Use app password or real password
+app.config['MAIL_DEFAULT_SENDER'] = 'your_email@gmail.com'
+mail = Mail(app)
 
 DB_NAME = "calendar.db"
 
@@ -24,21 +35,6 @@ def init_db():
             password TEXT
         )
     """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            time TEXT,
-            title TEXT,
-            notes TEXT
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS appointment_users (
-            appointment_id INTEGER,
-            user_email TEXT
-        )
-    """)
     conn.commit()
     conn.close()
 
@@ -47,61 +43,68 @@ init_db()
 
 # ---------------- ROUTES ----------------
 
-# Home Route - Always redirect to login if not logged in
+# Home route - redirect to login or register page
 @app.route("/", methods=["GET"])
 def index():
     if "user" not in session:
-        return redirect("/login")  # Redirecting to login if no user session exists
-    return redirect("/calendar")  # Redirect to calendar if logged in
+        return redirect("/login")  # Redirect to login if user is not logged in
+    return redirect("/calendar")
 
-# Login Route
+# Login route
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-
+        email = request.form['email']
+        password = request.form['password']
+        
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
-        user = cur.fetchone()
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE email = ?", (email,))
+        user = c.fetchone()
         conn.close()
 
-        if user:
-            session["user"] = email  # Store user email in session
-            return redirect("/calendar")  # Redirect to calendar page
+        if user and check_password_hash(user[4], password):  # user[4] is the password field
+            session["user"] = user[0]  # Store user ID in session
+            return redirect("/calendar")
         else:
-            return "Invalid credentials, please try again."
-
+            flash("Invalid credentials, please try again.")
+            return render_template("login.html")
+    
     return render_template("login.html")
 
-# Registration Route
+# Register route
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        first_name = request.form["first_name"]
-        last_name = request.form["last_name"]
-        email = request.form["email"]
-        password = request.form["password"]
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password)
 
-        # Generate a random password if necessary (this can be extended)
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-                    (first_name, last_name, email, password))
+        c = conn.cursor()
+        c.execute("INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
+                  (first_name, last_name, email, hashed_password))
         conn.commit()
         conn.close()
 
-        return redirect("/login")  # Redirect to login after successful registration
+        # Send confirmation email
+        msg = Message('Welcome to D3NTAL TECH!', recipients=[email])
+        msg.body = f"Hello {first_name},\n\nYour account has been created. You can now log in with your email and password.\n\nBest regards,\nD3NTAL TECH Team"
+        mail.send(msg)
 
+        flash("Registration successful! Please check your email for confirmation.")
+        return redirect("/login")
+    
     return render_template("register.html")
 
-# Calendar View Route
+# Calendar route
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
     if "user" not in session:
-        return redirect("/login")  # Redirect to login page if not logged in
-
+        return redirect("/login")  # If user is not logged in, redirect to login
+    
     today = datetime.today()
     year = int(request.args.get("year", today.year))
     month = int(request.args.get("month", today.month))
