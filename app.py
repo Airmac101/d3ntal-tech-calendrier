@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "cle_secrete_par_defaut"
 
-DB_NAME = "calendar.db"  # Ensure this points to your database file
+DB_NAME = "calendar.db"
 
 # ---------------- DATABASE ----------------
 def get_db():
@@ -15,7 +15,6 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    # Create users table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,8 +24,6 @@ def init_db():
             password TEXT
         )
     """)
-    
-    # Create appointments table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,15 +33,12 @@ def init_db():
             notes TEXT
         )
     """)
-    
-    # Create appointment_users table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
             appointment_id INTEGER,
             user_email TEXT
         )
     """)
-    
     conn.commit()
     conn.close()
 
@@ -53,27 +47,30 @@ init_db()
 
 # ---------------- ROUTES ----------------
 
+# Log all routes to verify route mappings
+@app.before_first_request
+def log_routes():
+    print("Registered Routes:")
+    for rule in app.url_map.iter_rules():
+        print(rule)
+
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
     if "user" not in session:
         return redirect("/login")
 
     try:
-        # Get current date and year/month from URL
         today = datetime.today()
         year = int(request.args.get("year", today.year))
         month = int(request.args.get("month", today.month))
 
-        # Get the month's name for display
         month_name = calendar.month_name[month]
 
-        # Navigate between months
         prev_month = month - 1 if month > 1 else 12
         prev_year = year - 1 if month == 1 else year
         next_month = month + 1 if month < 12 else 1
         next_year = year + 1 if month == 12 else year
 
-        # Get the calendar days and check if any events are associated with those days
         cal = calendar.monthcalendar(year, month)
         calendar_days = []
         for week in cal:
@@ -91,7 +88,6 @@ def calendar_view():
                     })
                     conn.close()
 
-        # Handle new event creation if POST request
         if request.method == "POST":
             event_date = request.form.get("event_date")
             event_time = request.form.get("event_time")
@@ -114,7 +110,6 @@ def calendar_view():
 
             return redirect("/calendar")
 
-        # Fetch all users to allow selection of collaborators for the event
         conn = get_db()
         cur = conn.cursor()
         cur.execute("SELECT email FROM users")
@@ -133,7 +128,7 @@ def calendar_view():
             next_year=next_year,
             all_users=all_users
         )
-    
+
     except Exception as e:
         print(f"Error in calendar_view route: {e}")
         return f"An error occurred: {e}"
