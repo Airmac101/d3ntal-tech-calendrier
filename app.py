@@ -131,13 +131,3 @@ def calendar_view():
             prev_year=prev_year,
             next_month=next_month,
             next_year=next_year,
-            all_users=all_users
-        )
-
-    except Exception as e:
-        print(f"Error in calendar_view route: {e}")
-        return f"An error occurred: {e}"
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
