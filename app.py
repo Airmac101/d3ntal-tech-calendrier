@@ -26,8 +26,6 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    
-    # Create users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +36,6 @@ def init_db():
         )
     """)
     
-    # Create appointments table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +46,6 @@ def init_db():
         )
     """)
     
-    # Create appointment_users table if it doesn't exist
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointment_users (
             appointment_id INTEGER,
@@ -65,7 +61,7 @@ init_db()
 
 # ---------------- ROUTES ----------------
 
-# Home route - redirect to login or register page
+# Home route - redirect to login if user is not authenticated
 @app.route("/", methods=["GET"])
 def index():
     if "user" not in session:
