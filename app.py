@@ -1,10 +1,11 @@
 from flask import Flask, render_template, request, session, redirect, flash
 import os
+import calendar
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "cle_secrete_d3ntal_tech"
 
-# Emails autorisés
 AUTHORIZED_EMAILS = [
     "denismeuret01@gmail.com",
     "denismeuret@d3ntal-tech.fr",
@@ -18,7 +19,7 @@ def index():
 
         if email in AUTHORIZED_EMAILS:
             session["user"] = email
-            return redirect("/calendar")  # ✅ REDIRECTION DIRECTE
+            return redirect("/calendar")
         else:
             flash("❌ Email non autorisé. Accès refusé.")
 
@@ -26,10 +27,25 @@ def index():
 
 
 @app.route("/calendar")
-def calendar():
+def calendar_view():
     if "user" not in session:
         return redirect("/")
-    return render_template("calendar.html")
+
+    today = datetime.today()
+    year = today.year
+    month = today.month
+
+    cal = calendar.Calendar()
+    calendar_days = cal.monthdatescalendar(year, month)
+
+    month_name = calendar.month_name[month]
+
+    return render_template(
+        "calendar.html",
+        month_name=month_name,
+        year=year,
+        calendar_days=calendar_days
+    )
 
 
 @app.route("/logout")
