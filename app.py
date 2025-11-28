@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 app.secret_key = "cle_secrete_d3ntal_tech"
 
-# Les 3 emails autorisés
+# Emails autorisés
 AUTHORIZED_EMAILS = [
     "denismeuret01@gmail.com",
     "denismeuret@d3ntal-tech.fr",
@@ -18,18 +18,11 @@ def index():
 
         if email in AUTHORIZED_EMAILS:
             session["user"] = email
-            return redirect("/login_successful")
+            return redirect("/calendar")  # ✅ REDIRECTION DIRECTE
         else:
             flash("❌ Email non autorisé. Accès refusé.")
 
     return render_template("login.html")
-
-
-@app.route("/login_successful")
-def login_successful():
-    if "user" not in session:
-        return redirect("/")
-    return render_template("login_successful.html")
 
 
 @app.route("/calendar")
