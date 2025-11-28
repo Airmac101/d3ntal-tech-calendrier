@@ -1,42 +1,29 @@
-from flask import Flask, render_template, request, session, redirect, flash
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Accès D3NTAL TECH</title>
+</head>
+<body>
 
-app = Flask(__name__)
-app.secret_key = "cle_secrete_d3ntal_tech"
+<h1>Accès sécurisé D3NTAL TECH</h1>
 
-# Emails autorisés
-AUTHORIZED_EMAILS = [
-    "denismeuret01@gmail.com",
-    "denismeuret@d3ntal-tech.fr",
-    "isis.stouvenel@d3ntal-tech.fr"
-]
+<form method="POST">
+    <label>Veuillez entrer votre email :</label><br><br>
+    <input type="email" name="email" required>
+    <br><br>
+    <button type="submit">Valider</button>
+</form>
 
-# Page d'accueil simple
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        email = request.form.get("email")
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul>
+        {% for message in messages %}
+            <li style="color:red;">{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
 
-        if email in AUTHORIZED_EMAILS:
-            session["user"] = email
-            return redirect("/login_successful")
-        else:
-            flash("❌ Email non autorisé. Accès refusé.")
-
-    return render_template("login.html")
-
-
-@app.route("/login_successful")
-def login_successful():
-    if "user" not in session:
-        return redirect("/")
-    return render_template("login_successful.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+</body>
+</html>
