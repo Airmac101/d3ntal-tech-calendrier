@@ -46,9 +46,9 @@ init_db()
 # Home route - redirect to login or register page
 @app.route("/", methods=["GET"])
 def index():
-    if "user" not in session:
-        return redirect("/login")  # Redirect to login if user is not logged in
-    return redirect("/calendar")
+    if "user" not in session:  # Check if the user is logged in
+        return redirect("/login")  # Redirect to the login page if not logged in
+    return redirect("/calendar")  # Otherwise, redirect to the calendar page
 
 # Login route
 @app.route("/login", methods=["GET", "POST"])
@@ -65,7 +65,7 @@ def login():
 
         if user and check_password_hash(user[4], password):  # user[4] is the password field
             session["user"] = user[0]  # Store user ID in session
-            return redirect("/calendar")
+            return redirect("/calendar")  # Redirect to calendar after login
         else:
             flash("Invalid credentials, please try again.")
             return render_template("login.html")
@@ -102,8 +102,8 @@ def register():
 # Calendar route
 @app.route("/calendar", methods=["GET", "POST"])
 def calendar_view():
-    if "user" not in session:
-        return redirect("/login")  # If user is not logged in, redirect to login
+    if "user" not in session:  # If user is not logged in, redirect to login
+        return redirect("/login")
     
     today = datetime.today()
     year = int(request.args.get("year", today.year))
