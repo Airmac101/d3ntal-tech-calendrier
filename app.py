@@ -10,37 +10,48 @@ DB_NAME = "calendar.db"
 
 # ---------------- DATABASE ----------------
 def get_db():
-    return sqlite3.connect(DB_NAME)
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        return conn
+    except sqlite3.Error as e:
+        print(f"Database connection error: {e}")
+        return None
 
 def init_db():
     conn = get_db()
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            first_name TEXT,
-            last_name TEXT,
-            email TEXT UNIQUE,
-            password TEXT
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            time TEXT,
-            title TEXT,
-            notes TEXT
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS appointment_users (
-            appointment_id INTEGER,
-            user_email TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+    if conn:
+        try:
+            c = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    first_name TEXT,
+                    last_name TEXT,
+                    email TEXT UNIQUE,
+                    password TEXT
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS appointments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT,
+                    time TEXT,
+                    title TEXT,
+                    notes TEXT
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS appointment_users (
+                    appointment_id INTEGER,
+                    user_email TEXT
+                )
+            """)
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            print(f"Error initializing database: {e}")
+            conn.rollback()
+            conn.close()
 
 # Initialize the database
 init_db()
@@ -83,15 +94,16 @@ def calendar_view():
                 if day != 0:
                     date_key = f"{year}-{month:02d}-{day:02d}"
                     conn = get_db()
-                    cur = conn.cursor()
-                    cur.execute("SELECT * FROM appointments WHERE date = ?", (date_key,))
-                    events = cur.fetchall()
-                    has_event = len(events) > 0
-                    calendar_days.append({
-                        "day": day,
-                        "has_event": has_event
-                    })
-                    conn.close()
+                    if conn:
+                        cur = conn.cursor()
+                        cur.execute("SELECT * FROM appointments WHERE date = ?", (date_key,))
+                        events = cur.fetchall()
+                        has_event = len(events) > 0
+                        calendar_days.append({
+                            "day": day,
+                            "has_event": has_event
+                        })
+                        conn.close()
 
         if request.method == "POST":
             event_date = request.form.get("event_date")
@@ -101,25 +113,27 @@ def calendar_view():
             collaborators = request.form.getlist("collaborators")
 
             conn = get_db()
-            cur = conn.cursor()
-            cur.execute("INSERT INTO appointments (date, time, title, notes) VALUES (?, ?, ?, ?)",
-                        (event_date, event_time, event_title, event_notes))
-            appointment_id = cur.lastrowid
+            if conn:
+                cur = conn.cursor()
+                cur.execute("INSERT INTO appointments (date, time, title, notes) VALUES (?, ?, ?, ?)",
+                            (event_date, event_time, event_title, event_notes))
+                appointment_id = cur.lastrowid
 
-            for collaborator in collaborators:
-                cur.execute("INSERT INTO appointment_users (appointment_id, user_email) VALUES (?, ?)",
-                            (appointment_id, collaborator))
+                for collaborator in collaborators:
+                    cur.execute("INSERT INTO appointment_users (appointment_id, user_email) VALUES (?, ?)",
+                                (appointment_id, collaborator))
 
-            conn.commit()
-            conn.close()
+                conn.commit()
+                conn.close()
 
             return redirect("/calendar")
 
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT email FROM users")
-        all_users = [row[0] for row in cur.fetchall()]
-        conn.close()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("SELECT email FROM users")
+            all_users = [row[0] for row in cur.fetchall()]
+            conn.close()
 
         return render_template(
             "calendar.html",
