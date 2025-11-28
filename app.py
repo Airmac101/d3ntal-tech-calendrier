@@ -26,6 +26,8 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
+    
+    # Create users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,6 +37,26 @@ def init_db():
             password TEXT
         )
     """)
+    
+    # Create appointments table if it doesn't exist
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS appointments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT,
+            time TEXT,
+            title TEXT,
+            notes TEXT
+        )
+    """)
+    
+    # Create appointment_users table if it doesn't exist
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS appointment_users (
+            appointment_id INTEGER,
+            user_email TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -46,8 +68,8 @@ init_db()
 # Home route - redirect to login or register page
 @app.route("/", methods=["GET"])
 def index():
-    if "user" not in session:  # Check if the user is logged in
-        return redirect("/login")  # Redirect to the login page if not logged in
+    if "user" not in session:
+        return redirect("/login")  # Redirect to login if user is not logged in
     return redirect("/calendar")  # Otherwise, redirect to the calendar page
 
 # Login route
