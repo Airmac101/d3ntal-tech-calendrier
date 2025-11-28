@@ -2,17 +2,19 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Connexion réussie</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Accès autorisé</title>
 </head>
 <body>
 
-<h1>✅ Connexion réussie</h1>
-<p>Votre email est autorisé.</p>
+<h1>✅ Email validé</h1>
+<p>Votre accès est confirmé.</p>
 
 <a href="/calendar">
-    <button>Accéder au calendrier</button>
+    <button>Continuer vers l'application</button>
 </a>
+
+<br><br>
+<a href="/logout">Déconnexion</a>
 
 </body>
 </html>
