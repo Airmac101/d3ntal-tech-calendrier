@@ -48,7 +48,7 @@ init_db()
 # ---------------- ROUTES ----------------
 
 # Log all routes to verify route mappings
-@app.before_first_request
+@app.before_request
 def log_routes():
     print("Registered Routes:")
     for rule in app.url_map.iter_rules():
