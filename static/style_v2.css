@@ -110,7 +110,22 @@ html, body {
     padding: 6px;
     height: 90px;
     background: white;
-    cursor: pointer;
+
+    /* FIX CLICK — IMPORTANT */
+    cursor: pointer !important;
+    position: relative;
+    pointer-events: auto !important;
+    z-index: 10;
+}
+
+/* Pour que l'intérieur du jour ne bloque pas le clic */
+.calendar-day * {
+    pointer-events: none;
+}
+
+/* Les événements restent cliquables */
+.event-badge {
+    pointer-events: auto !important;
 }
 
 .other-month {
@@ -221,7 +236,7 @@ html, body {
     color: #1a3d8f;
 }
 
-/* INPUTS — CLIQUABLES & FIABLES */
+/* INPUTS */
 .modal-box input[type=text],
 .modal-box input[type=date],
 .modal-box input[type=time],
@@ -284,7 +299,7 @@ html, body {
 }
 
 /* ===========================
-   MENU CONTEXTUEL PREMIUM
+   MENU CONTEXTUEL
 =========================== */
 .context-menu {
     position: fixed;
@@ -313,14 +328,4 @@ html, body {
 
 .context-item:hover {
     background: #e8ecf7;
-}
-
-/* Empêche le clic sur badge de déclencher le menu */
-.event-badge {
-    pointer-events: auto;
-}
-
-/* Pour meilleure lisibilité dans le menu */
-.context-item span {
-    font-weight: bold;
 }
