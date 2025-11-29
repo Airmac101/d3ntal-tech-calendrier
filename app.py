@@ -281,7 +281,7 @@ def calendar_page():
             }
         )
 
-    # Récapitulatif simple classé par jour
+    # Récap par jour
     month_summary = {}
     for r in rows:
         d_iso = r["event_date"]
@@ -317,12 +317,10 @@ def calendar_page():
         next_year=next_year,
         current_day=today,
         events_by_date=events_by_date,
-        week_summary=month_summary,  # utilisé par ton récapitulatif
+        week_summary=month_summary,
         week_start=month_start,
         week_end=month_end,
     )
-
-
 # ------------------------------------------------
 # API EVENTS
 # ------------------------------------------------
@@ -331,14 +329,17 @@ def api_add_event():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
-    data = request.get_json()
-    title = data["title"]
-    event_date = data["event_date"]
-    event_time = data["event_time"]
-    event_type = data["event_type"]
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    event_date = data.get("event_date", "")
+    event_time = data.get("event_time", "")
+    event_type = data.get("event_type", "")
     collaborators = data.get("collaborators", "")
     priority = data.get("priority", "Normal")
     notes = data.get("notes", "")
+
+    if not title or not event_date or not event_time or not event_type:
+        return jsonify({"status": "error"}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -383,13 +384,16 @@ def api_update_event():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
-    data = request.get_json()
-    event_id = data["event_id"]
+    data = request.get_json() or {}
+    event_id = data.get("event_id")
 
-    title = data["title"]
-    event_date = data["event_date"]
-    event_time = data["event_time"]
-    event_type = data["event_type"]
+    if not event_id:
+        return jsonify({"status": "error"}), 400
+
+    title = data.get("title", "").strip()
+    event_date = data.get("event_date", "")
+    event_time = data.get("event_time", "")
+    event_type = data.get("event_type", "")
     collaborators = data.get("collaborators", "")
     priority = data.get("priority", "Normal")
     notes = data.get("notes", "")
@@ -439,8 +443,11 @@ def api_delete_event():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
-    data = request.get_json()
-    event_id = data["event_id"]
+    data = request.get_json() or {}
+    event_id = data.get("event_id")
+
+    if not event_id:
+        return jsonify({"status": "error"}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -471,7 +478,7 @@ def api_delete_event():
     conn.commit()
     conn.close()
 
-    return jsonify({"status": "success"}
+    return jsonify({"status": "success"})
 
 
 # ------------------------------------------------
@@ -549,8 +556,9 @@ def export_pdf():
 # ------------------------------------------------
 # MAIN
 # ------------------------------------------------
-if __name__ == "__main__":
-    force_init_db()
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
+# Initialisation de la base au chargement du module (Render + gunicorn)
 force_init_db()
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
