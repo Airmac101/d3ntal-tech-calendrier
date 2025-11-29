@@ -9,41 +9,45 @@ body, html {
 /* TOPBAR */
 .topbar {
     width: 100%;
-    height: 70px;
+    height: 60px;
     background: #1a3d8f;
     color: white;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 28px;
+    padding: 0 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .topbar-title {
-    font-size: 26px;
+    font-size: 22px;
     font-weight: bold;
 }
 
 .topbar-logout {
-    margin-left: 15px;
     color: white;
-    font-weight: bold;
     text-decoration: none;
-    font-size: 18px;
+    font-weight: bold;
+    font-size: 16px;
 }
 
-/* CONTAINER */
+/* CONTAINER CALENDRIER */
 .container {
     width: 85%;
     max-width: 1200px;
     background: white;
-    margin: 130px auto 40px auto;
-    padding: 45px;
-    border-radius: 16px;
+    margin: 90px auto 40px auto;
+    padding: 35px;
+    border-radius: 14px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
-/* NAVIGATION */
+.add-wrapper {
+    margin-top: 18px;
+    text-align: right;
+}
+
+/* NAVIGATION CALENDRIER */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
@@ -51,22 +55,22 @@ body, html {
 }
 
 .calendar-nav h2 {
-    font-size: 28px;
+    font-size: 24px;
     margin: 0;
 }
 
 .nav-btn {
     background: #1a3d8f;
     color: white;
-    padding: 12px 22px;
+    padding: 10px 18px;
     border-radius: 8px;
     text-decoration: none;
     font-weight: bold;
-    font-size: 17px;
+    font-size: 15px;
 }
 
 .add-btn {
-    font-size: 18px !important;
+    font-size: 16px;
 }
 
 .nav-btn:hover {
@@ -77,23 +81,23 @@ body, html {
 .calendar {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 25px;
+    margin-top: 18px;
 }
 
 .calendar th {
     background: #1a3d8f;
     color: white;
-    padding: 14px;
+    padding: 10px;
     border: 1px solid #ccc;
-    font-size: 17px;
+    font-size: 15px;
 }
 
 .calendar td {
-    height: 135px;
+    height: 110px;
     border: 1px solid #ccc;
     text-align: left;
-    font-size: 16px;
-    padding: 10px;
+    font-size: 14px;
+    padding: 8px;
     vertical-align: top;
     position: relative;
 }
@@ -111,60 +115,122 @@ body, html {
 /* JOUR */
 .day-number {
     font-weight: bold;
-    margin-bottom: 10px;
-    font-size: 18px;
+    margin-bottom: 8px;
+    font-size: 16px;
 }
 
-/* EVENEMENTS */
+/* EVENEMENTS DANS LES CASES */
 .event-badge {
     background: #eef3ff;
     border-left: 4px solid #1a3d8f;
-    border-radius: 10px;
-    padding: 12px 12px;
-    margin-top: 8px;
-    font-size: 16px;
+    border-radius: 8px;
+    padding: 8px 8px;
+    margin-top: 6px;
+    font-size: 14px;
     cursor: pointer;
+}
+
+/* Couleurs par type (depuis css_class) */
+.event-type-rdv {
+    border-left-color: #1565c0;
+}
+.event-type-reunion {
+    border-left-color: #2e7d32;
+}
+.event-type-admin {
+    border-left-color: #ef6c00;
+}
+.event-type-urgence {
+    border-left-color: #c62828;
+}
+.event-type-formation {
+    border-left-color: #6a1b9a;
+}
+.event-type-autre {
+    border-left-color: #7e7e7e;
 }
 
 .event-line {
     display: flex;
-    gap: 10px;
+    gap: 6px;
     align-items: center;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: bold;
 }
 
-.event-meta {
-    font-size: 15px;
-    color: #333;
-    margin-top: 4px;
+.event-time {
+    font-weight: bold;
 }
 
-/* LOGIN */
+.event-title {
+    font-weight: normal;
+}
+
+.event-meta {
+    font-size: 13px;
+    color: #333;
+    margin-top: 2px;
+}
+
+/* LOGIN PAGE */
 .login-wrapper {
-    margin-top: 160px;
+    margin-top: 120px;
     width: 100%;
     display: flex;
     justify-content: center;
 }
 
 .login-box {
-    width: 460px;
+    width: 420px;
     background: white;
-    padding: 45px;
-    border-radius: 16px;
+    padding: 35px;
+    border-radius: 14px;
     text-align: center;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .login-box h1 {
     margin-bottom: 5px;
-    font-size: 28px;
+    font-size: 26px;
 }
 
 .login-box h2 {
-    font-size: 20px;
-    margin-bottom: 28px;
+    font-size: 18px;
+    margin-bottom: 22px;
+}
+
+.login-box form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-box input {
+    height: 42px;
+    border-radius: 6px;
+    border: 1px solid #999;
+    padding-left: 10px;
+    font-size: 15px;
+}
+
+.login-box button {
+    background: #1a3d8f;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.error {
+    margin-top: 10px;
+    background: #ffd6d6;
+    color: #b00020;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 14px;
 }
 
 /* MODALE */
@@ -174,7 +240,7 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.55);
     display: none;
     justify-content: center;
     align-items: center;
@@ -182,59 +248,67 @@ body, html {
 }
 
 .modal-box {
+    position: relative;
     background: white;
-    width: 540px;
-    padding: 30px;
-    border-radius: 16px;
+    width: 520px;
+    max-width: 95%;
+    padding: 26px;
+    border-radius: 14px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    text-align: left;
 }
 
 .modal-box h3 {
-    text-align: center;
-    font-size: 24px;
     margin-top: 0;
+    font-size: 22px;
+    text-align: center;
     color: #1a3d8f;
 }
 
 .modal-box input,
 .modal-box select {
     width: 100%;
-    padding: 16px;
-    margin-top: 16px;
+    padding: 14px;
+    margin-top: 12px;
     border: 1px solid #888;
-    border-radius: 10px;
-    font-size: 17px;
+    border-radius: 8px;
+    font-size: 15px;
 }
 
 .collab-title {
-    margin-top: 18px;
-    font-size: 18px;
+    margin-top: 14px;
     font-weight: bold;
+    font-size: 15px;
 }
 
 .collab-group {
-    margin-top: 12px;
+    margin-top: 8px;
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 24px;
-    font-size: 17px;
+    gap: 8px 18px;
+    font-size: 15px;
 }
 
-.collab-group input {
-    width: 20px;
-    height: 20px;
+.collab-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-/* BOUTONS MODALE */
+.collab-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
 .modal-box button {
-    margin-top: 22px;
+    margin-top: 18px;
     width: 100%;
-    padding: 16px;
+    padding: 14px;
     background: #1a3d8f;
     color: white;
     border: none;
-    border-radius: 10px;
-    font-size: 19px;
+    border-radius: 8px;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
 }
@@ -245,7 +319,8 @@ body, html {
 
 .close-btn {
     position: absolute;
-    right: 25px;
-    font-size: 34px;
+    right: 20px;
+    top: 8px;
+    font-size: 28px;
     cursor: pointer;
 }
