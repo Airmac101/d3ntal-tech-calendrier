@@ -1,33 +1,53 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Connexion - D3NTAL TECH</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}">
-</head>
-<body>
+/* LOGIN PAGE STYLES */
+.login-wrapper {
+    margin-top: 120px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
 
-<!-- TOPBAR -->
-<div class="topbar">
-    <div class="topbar-title">D3NTAL TECH</div>
-</div>
+.login-box {
+    width: 420px;
+    background: white;
+    padding: 40px;
+    text-align: center;
+    border-radius: 15px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
 
-<div class="login-container">
-    <h1>D3NTAL TECH</h1>
-    <h2>Connexion sécurisée</h2>
+.login-box h1 {
+    margin-bottom: 5px;
+}
 
-    <form method="POST">
-        <label>Email autorisé :</label>
-        <input type="email" name="email" required>
-        <button type="submit">Se connecter</button>
-    </form>
+.login-box h2 {
+    margin-bottom: 25px;
+    font-size: 18px;
+}
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <p class="error">{{ messages[0] }}</p>
-        {% endif %}
-    {% endwith %}
-</div>
+.login-box form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
 
-</body>
-</html>
+.login-box input {
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid #999;
+    padding: 0 8px;
+}
+
+.login-box button {
+    background: #1a3d8f;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.error {
+    color: red;
+    margin-top: 10px;
+}
