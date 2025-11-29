@@ -5,7 +5,6 @@ from flask import (
     redirect,
     session,
     jsonify,
-    send_file,
 )
 import sqlite3
 import os
@@ -15,10 +14,6 @@ import hashlib
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
-# NEW IMPORTS FOR EXCEL EXPORT
-from openpyxl import Workbook
-
 
 # ------------------------------------------------
 # CONFIG FLASK
@@ -162,11 +157,13 @@ def force_init_db():
         """
     )
 
+    # Ajout colonnes si absentes
     try: cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
     except: pass
     try: cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
     except: pass
 
+    # Comptes autorisés
     pwd = hash_password("D3ntalTech!@2025")
     for email in [
         "denismeuret01@gmail.com",
@@ -252,6 +249,7 @@ def calendar_page():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # ÉVÉNEMENTS DU MOIS
     cur.execute(
         """
         SELECT * FROM events
@@ -280,6 +278,7 @@ def calendar_page():
             }
         )
 
+    # RÉCAP
     month_summary = {}
     for r in rows:
         d_iso = r["event_date"]
@@ -480,56 +479,10 @@ def api_delete_event():
 
 
 # ------------------------------------------------
-# EXCEL EXPORT — NEW FEATURE
-# ------------------------------------------------
-@app.route("/export_excel")
-def export_excel():
-    if "user" not in session:
-        return redirect("/")
-
-    year = int(request.args.get("year"))
-    month = int(request.args.get("month"))
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        SELECT *
-        FROM events
-        WHERE substr(event_date,1,4)=?
-        AND substr(event_date,6,2)=?
-        ORDER BY event_date,event_time;
-        """,
-        (str(year), f"{month:02d}"),
-    )
-    rows = cur.fetchall()
-    conn.close()
-
-    events = [dict(r) for r in rows]
-
-    recap_data = {
-        "Total events": len(events),
-        "RDV": sum(1 for e in events if e["event_type"] == "rdv"),
-        "Réunions": sum(1 for e in events if e["event_type"] == "reunion"),
-        "Admin": sum(1 for e in events if e["event_type"] == "admin"),
-        "Urgence": sum(1 for e in events if e["event_type"] == "urgence"),
-        "Formation": sum(1 for e in events if e["event_type"] == "formation"),
-        "Autres": sum(1 for e in events if e["event_type"] == "autre"),
-    }
-
-    filepath = generate_excel(year, month, recap_data, events)
-
-    return send_file(
-        filepath,
-        as_attachment=True,
-        download_name=f"d3ntaltech_recap_events_{year}_{month}.xlsx"
-    )
-
-
-# ------------------------------------------------
 # MAIN
 # ------------------------------------------------
 if __name__ == "__main__":
     force_init_db()
     app.run(debug=True)
+
+force_init_db()
