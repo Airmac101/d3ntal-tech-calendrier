@@ -5,13 +5,15 @@ body {
     margin: 0;
     padding: 0;
     color: #333;
+    display: flex;
+    justify-content: center;   /* Centre globalement le contenu */
+    padding-top: 40px;
 }
 
 /* GENERIC CONTAINER */
 .container {
     width: 95%;
     max-width: 900px;
-    margin: 40px auto;
     background: white;
     padding: 30px;
     border-radius: 12px;
@@ -25,6 +27,50 @@ h1, h2 {
     color: #1a3d8f;
 }
 
+/* LOGIN FORM FIX — centre parfaitement */
+form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;  /* espace entre input et bouton */
+}
+
+/* INPUT FIELDS */
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+    width: 250px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #cccccc;
+    font-size: 16px;
+}
+
+/* BUTTONS */
+button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #1a3d8f;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background-color: #264fb5;
+}
+
+/* ERROR MESSAGE */
+.error {
+    color: #b00020;
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center;
+}
+
 /* CALENDAR NAVIGATION */
 .calendar-nav {
     display: flex;
@@ -33,6 +79,12 @@ h1, h2 {
     margin-bottom: 25px;
 }
 
+/* CALENDAR SHIFT LEFT — main fix */
+table.calendar {
+    margin-left: 0;   /* pousse le calendrier vers la gauche */
+}
+
+/* NAV BUTTONS */
 .nav-btn {
     padding: 10px 15px;
     background: #1a3d8f;
@@ -51,7 +103,6 @@ h1, h2 {
 .calendar {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
     table-layout: fixed;
 }
 
@@ -64,7 +115,7 @@ h1, h2 {
     border: 1px solid #dee2e6;
 }
 
-/* CALENDAR CELLS */
+/* CELLS */
 .calendar td {
     border: 1px solid #dee2e6;
     height: 110px;
@@ -94,7 +145,7 @@ h1, h2 {
     border: 2px solid #1a3d8f !important;
 }
 
-/* LOGOUT LINK */
+/* LOGOUT */
 .logout {
     display: block;
     text-align: center;
