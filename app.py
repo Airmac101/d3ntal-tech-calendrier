@@ -39,17 +39,12 @@ def get_db_connection():
 
 def force_init_db():
     """
-    Force l'initialisation de la DB à chaque démarrage
-    (nécessaire pour Render).
-    ATTENTION : on supprime et recrée la table events
-    (ok tant qu'on est en phase de test).
+    Forcer l'init de la DB à chaque démarrage (Render)
     """
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # ------------------------------------------------
     # Table utilisateurs autorisés
-    # ------------------------------------------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS authorized_users (
             email TEXT PRIMARY KEY,
@@ -58,13 +53,9 @@ def force_init_db():
         );
     """)
 
-    # ------------------------------------------------
-    # Table des événements
-    # (recréée pour garantir la structure)
-    # ------------------------------------------------
-    cursor.execute("DROP TABLE IF EXISTS events;")
+    # Table événements (contient toutes les infos)
     cursor.execute("""
-        CREATE TABLE events (
+        CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_email TEXT NOT NULL,
             title TEXT NOT NULL,
@@ -112,43 +103,8 @@ def check_credentials(email: str, password: str) -> bool:
     return row["password_hash"] == hash_password(password)
 
 
-def format_collaborators(collaborators_raw: str) -> str:
-    """
-    Transforme la chaîne brute "Denis,isis@...,assistante@..."
-    en prénoms propres : "Denis, Isis, Assistante, Jean Dupont"
-    """
-    if not collaborators_raw:
-        return ""
-
-    items = [c.strip() for c in collaborators_raw.split(",") if c.strip()]
-    display = []
-
-    for val in items:
-        lower = val.lower()
-
-        if "isis" in lower:
-            display.append("Isis")
-        elif "denis" in lower:
-            display.append("Denis")
-        elif "assist" in lower:
-            display.append("Assistante")
-        else:
-            # Email : on garde la partie avant @
-            if "@" in val:
-                local = val.split("@", 1)[0]
-            else:
-                local = val
-
-            # Remplace . et _ par espace, met une majuscule au début de chaque mot
-            local = local.replace(".", " ").replace("_", " ")
-            pretty = " ".join(p.capitalize() for p in local.split())
-            display.append(pretty or val)
-
-    return ", ".join(display)
-
-
 # ------------------------------------------------
-# ROUTE LOGIN
+# LOGIN
 # ------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -177,7 +133,7 @@ def logout():
 
 
 # ------------------------------------------------
-# CALENDAR (PROTÉGÉ)
+# CALENDAR PAGE
 # ------------------------------------------------
 @app.route("/calendar")
 def calendar_page():
@@ -204,43 +160,28 @@ def calendar_page():
     month_days = cal.monthdatescalendar(year, month)
     month_name = calendar.month_name[month]
 
-    # ------------------------------
-    # Récupération des événements du mois
-    # ------------------------------
-    start_date = date(year, month, 1)
-    if month == 12:
-        end_date = date(year + 1, 1, 1)
-    else:
-        end_date = date(year, month + 1, 1)
-
+    # Récupération des événements
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """
-        SELECT id, user_email, title, event_date, event_time, event_type, collaborators
-        FROM events
-        WHERE user_email = ?
-          AND event_date >= ?
-          AND event_date < ?
-        ORDER BY event_date ASC, event_time ASC;
-        """,
-        (session["user"], start_date.isoformat(), end_date.isoformat()),
-    )
-    rows = cursor.fetchall()
+    cursor.execute("""
+        SELECT * FROM events
+        WHERE substr(event_date, 4, 2) = ?
+        AND substr(event_date, 7, 4) = ?
+        ORDER BY event_date, event_time;
+    """, (f"{month:02d}", str(year)))
+    events = cursor.fetchall()
     conn.close()
 
-    # Dictionnaire : "YYYY-MM-DD" -> [événements...]
-    events_by_date = {}
-    for row in rows:
-        d = row["event_date"]
-        events_by_date.setdefault(d, []).append({
-            "id": row["id"],
-            "time": row["event_time"],
-            "title": row["title"],
-            "type": row["event_type"],
-            "collaborators": format_collaborators(row["collaborators"] or ""),
-            "raw_collaborators": row["collaborators"] or "",
-        })
+    events_by_day = {}
+    for e in events:
+        try:
+            d = int(e["event_date"][:2])
+        except:
+            continue
+
+        if d not in events_by_day:
+            events_by_day[d] = []
+        events_by_day[d].append(e)
 
     return render_template(
         "calendar.html",
@@ -253,12 +194,12 @@ def calendar_page():
         next_month=next_month,
         next_year=next_year,
         current_day=date.today(),
-        events_by_date=events_by_date,
+        events_by_day=events_by_day
     )
 
 
 # ------------------------------------------------
-# API : AJOUT D'ÉVÉNEMENT (AJAX)
+# API : AJOUT D'ÉVÉNEMENT
 # ------------------------------------------------
 @app.route("/api/add_event", methods=["POST"])
 def api_add_event():
@@ -266,6 +207,7 @@ def api_add_event():
         return jsonify({"status": "error", "message": "Non autorisé"}), 403
 
     data = request.get_json() or {}
+
     title = (data.get("title") or "").strip()
     event_date = data.get("event_date") or ""
     event_time = (data.get("event_time") or "").strip()
@@ -286,84 +228,15 @@ def api_add_event():
     conn.commit()
     conn.close()
 
-    return jsonify({"status": "success"}), 200
+    return jsonify({"status": "success"})
 
 
 # ------------------------------------------------
-# API : MISE À JOUR D'ÉVÉNEMENT
-# ------------------------------------------------
-@app.route("/api/update_event", methods=["POST"])
-def api_update_event():
-    if "user" not in session:
-        return jsonify({"status": "error", "message": "Non autorisé"}), 403
-
-    data = request.get_json() or {}
-    event_id = data.get("event_id")
-    title = (data.get("title") or "").strip()
-    event_date = data.get("event_date") or ""
-    event_time = (data.get("event_time") or "").strip()
-    event_type = (data.get("event_type") or "").strip()
-    collaborators = (data.get("collaborators") or "").strip()
-
-    if not event_id or not title or not event_date or not event_time or not event_type:
-        return jsonify({"status": "error", "message": "Données manquantes"}), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE events
-        SET title = ?, event_date = ?, event_time = ?, event_type = ?, collaborators = ?
-        WHERE id = ? AND user_email = ?;
-    """, (title, event_date, event_time, event_type, collaborators, event_id, session["user"]))
-
-    conn.commit()
-    modified = cursor.rowcount
-    conn.close()
-
-    if modified == 0:
-        return jsonify({"status": "error", "message": "Événement introuvable ou non autorisé"}), 404
-
-    return jsonify({"status": "success"}), 200
-
-
-# ------------------------------------------------
-# API : SUPPRESSION D'ÉVÉNEMENT
-# ------------------------------------------------
-@app.route("/api/delete_event", methods=["POST"])
-def api_delete_event():
-    if "user" not in session:
-        return jsonify({"status": "error", "message": "Non autorisé"}), 403
-
-    data = request.get_json() or {}
-    event_id = data.get("event_id")
-
-    if not event_id:
-        return jsonify({"status": "error", "message": "ID manquant"}), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        DELETE FROM events
-        WHERE id = ? AND user_email = ?;
-    """, (event_id, session["user"]))
-    conn.commit()
-    deleted = cursor.rowcount
-    conn.close()
-
-    if deleted == 0:
-        return jsonify({"status": "error", "message": "Événement introuvable ou non autorisé"}), 404
-
-    return jsonify({"status": "success"}), 200
-
-
-# ------------------------------------------------
-# MAIN LOCAL + RENDER
+# MAIN MODE
 # ------------------------------------------------
 if __name__ == "__main__":
     force_init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
 
-# IMPORTANT : Render ignore "__main__"
-# DONC on force l’init dès l'import !
+# Render exécution automatique
 force_init_db()
