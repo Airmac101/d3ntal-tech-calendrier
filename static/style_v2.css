@@ -37,7 +37,7 @@ html, body {
 }
 
 /* ===========================
-   LOGIN PAGE (isolé)
+   LOGIN PAGE (restaurée comme avant)
 =========================== */
 .login-container {
     width: 100%;
@@ -52,10 +52,12 @@ html, body {
 .login-container h1 {
     text-align: center;
     color: #1a3d8f;
+    margin-bottom: 10px;
 }
 
 .login-container h2 {
-    margin-top: 25px;
+    margin-top: 10px;
+    margin-bottom: 20px;
     text-align: center;
 }
 
@@ -187,13 +189,6 @@ html, body {
     cursor: pointer;
 }
 
-.event-type-rdv { border-left-color: #1565c0; }
-.event-type-reunion { border-left-color: #2e7d32; }
-.event-type-admin { border-left-color: #ef6c00; }
-.event-type-urgence { border-left-color: #c62828; }
-.event-type-formation { border-left-color: #6a1b9a; }
-.event-type-autre { border-left-color: #7e7e7e; }
-
 .event-line {
     font-size: 15px;
     display: flex;
@@ -236,7 +231,6 @@ html, body {
 
 /* Priorités */
 .priority { font-weight: bold; }
-
 .priority-urgent { color: red; }
 .priority-important { color: orange; }
 .priority-critique { color: green; }
@@ -275,7 +269,7 @@ html, body {
     color: #1a3d8f;
 }
 
-/* INPUTS — date & time NATIFS 100% CLIQUABLES */
+/* INPUTS MODALE — 100% CLIQUABLES */
 .modal-box input[type=text],
 .modal-box input[type=date],
 .modal-box input[type=time],
@@ -297,6 +291,7 @@ html, body {
     cursor: pointer;
 }
 
+/* NOTES */
 .notes-textarea {
     font-size: 11px;
     color: #000;
