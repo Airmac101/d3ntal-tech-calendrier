@@ -1,29 +1,24 @@
-/* GLOBAL PAGE STYLE */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background: #f2f4f8;
-}
-
-/* TOPBAR (fixe en haut) */
+/* TOPBAR */
 .topbar {
     width: 100%;
     height: 55px;
     background: #1a3d8f;
     color: white;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-
-    /* marge interne augmentée pour rapprocher Déconnexion */
-    padding: 0 60px;
-
+    padding: 0 25px;
     position: fixed;
     top: 0;
     left: 0;
     box-shadow: 0 2px 6px rgba(0,0,0,0.20);
     z-index: 1000;
+}
+
+/* Zone titre + logout à gauche */
+.left-zone {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* espace entre titre et déconnexion */
 }
 
 .topbar-title {
@@ -33,85 +28,49 @@ body {
 
 .topbar-logout {
     color: white;
-    text-decoration: none;
     font-weight: bold;
-
-    /* fixa : rapproche Déconnexion du bord */
-    margin-right: 40px;
+    text-decoration: none;
+    font-size: 16px;
 }
 
-/* CONTAINER PRINCIPAL POUR CALENDRIER ET PAGES */
+/* CONTAINER PRINCIPAL */
 .container {
     width: 75%;
     max-width: 1100px;
-    margin: 120px auto 40px auto;  /* espace sous la topbar */
     background: white;
     padding: 40px;
     border-radius: 15px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
-/* TITRES */
+/* Déplacer le calendrier à gauche */
+.calendar-left {
+    margin: 110px 0 40px 40px;  /* marge gauche réduite */
+}
+
+/* TITRE */
 h1 {
     text-align: center;
-    color: #1a3d8f;
     margin-bottom: 20px;
 }
 
-h2 {
-    text-align: center;
-    color: #333;
-}
-
-/* LOGIN PAGE */
-.login-container {
-    width: 420px;
-    margin: 160px auto 0 auto;  /* centre sous topbar */
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    text-align: center;
-}
-
-.login-container input {
-    width: 80%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    margin-bottom: 15px;
-}
-
-.login-container button {
-    background: #1a3d8f;
-    color: white;
-    padding: 10px 25px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.error {
-    color: red;
-    margin-top: 10px;
-}
-
-/* CALENDAR NAVIGATION */
+/* NAVIGATION */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    align-items: center;
+    margin-bottom: 25px;
 }
 
 .nav-btn {
-    background: #1a3d8f;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
     text-decoration: none;
+    background: #1a3d8f;
+    padding: 10px 20px;
+    color: white;
+    border-radius: 6px;
 }
 
-/* TABLEAU CALENDRIER */
+/* CALENDRIER */
 .calendar {
     width: 100%;
     border-collapse: collapse;
@@ -122,21 +81,19 @@ h2 {
     background: #1a3d8f;
     color: white;
     padding: 10px;
-}
-
-.calendar td {
-    border: 1px solid #ddd;
-    padding: 25px 0;
-    font-size: 14px;
-}
-
-/* JOUR AUJOURD’HUI */
-.today {
-    background: rgba(26, 61, 143, 0.15);
     font-weight: bold;
 }
 
-/* JOURS AUTRES MOIS */
+.calendar td {
+    height: 90px;
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+
+.today {
+    background: rgba(28, 73, 160, 0.25);
+}
+
 .other-month {
-    color: #aaa;
+    color: #999;
 }
