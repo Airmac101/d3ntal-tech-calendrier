@@ -1,139 +1,117 @@
-// ===========================
-//  VARIABLES DU MODAL
-// ===========================
-const modal = document.getElementById("eventModal");
-const modalTitle = document.getElementById("modalTitle");
-const closeModal = document.querySelector(".close");
+document.addEventListener("DOMContentLoaded", function () {
 
-const fieldId = document.getElementById("eventId");
-const fieldDate = document.getElementById("eventDate");
-const fieldType = document.getElementById("eventType");
-const fieldTitle = document.getElementById("eventTitle");
-const fieldCollab = document.getElementById("eventCollab");
-const fieldNotes = document.getElementById("eventNotes");
-const fieldPriority = document.getElementById("eventPriority");
+    const modal = document.getElementById("eventModal");
+    const closeBtn = document.querySelector(".close");
+    const addBtn = document.getElementById("addEventBtn");
 
-const eventForm = document.getElementById("eventForm");
+    const eventIdField = document.getElementById("eventId");
+    const dateField = document.getElementById("eventDate");
+    const typeField = document.getElementById("eventType");
+    const titleField = document.getElementById("eventTitle");
+    const collabField = document.getElementById("eventCollab");
+    const notesField = document.getElementById("eventNotes");
+    const priorityField = document.getElementById("eventPriority");
 
+    const form = document.getElementById("eventForm");
 
-// ===========================
-//  OUVERTURE MODAL (NOUVEL ÉVÉNEMENT)
-// ===========================
-function openCreateEvent(dateStr) {
-    modalTitle.textContent = "Ajouter un événement";
-    fieldId.value = "";
-    fieldDate.value = dateStr;
-    fieldType.value = "";
-    fieldTitle.value = "";
-    fieldCollab.value = "";
-    fieldNotes.value = "";
-    fieldPriority.value = "normal";
+    // ----------------------------
+    // FONCTIONS
+    // ----------------------------
 
-    modal.style.display = "block";
-}
+    function openModal() {
+        modal.style.display = "block";
+    }
 
+    function closeModal() {
+        modal.style.display = "none";
+        form.reset();
+        eventIdField.value = "";
+    }
 
-// ===========================
-//  OUVERTURE MODAL (MODIFIER ÉVÉNEMENT)
-// ===========================
-function openEditEvent(eventId) {
-    fetch(`/event/${eventId}`)
-        .then(res => res.json())
-        .then(data => {
-            modalTitle.textContent = "Modifier l'événement";
+    // OUVERTURE MODAL POUR CREATION
+    addBtn.addEventListener("click", function () {
+        document.getElementById("modalTitle").innerText = "Ajouter un événement";
+        openModal();
+    });
 
-            fieldId.value = data.id;
-            fieldDate.value = data.date;
-            fieldType.value = data.type;
-            fieldTitle.value = data.title;
-            fieldCollab.value = data.collaborators;
-            fieldNotes.value = data.notes;
-            fieldPriority.value = data.priority;
+    // OUVERTURE MODAL LORS DU CLIC SUR UN JOUR
+    document.querySelectorAll(".day-cell").forEach(cell => {
+        cell.addEventListener("click", function (event) {
 
-            modal.style.display = "block";
+            // éviter d'ouvrir le modal si on clique sur un événement
+            if (event.target.classList.contains("event-item")) return;
+
+            const date = this.getAttribute("data-date").substring(0, 10);
+            document.getElementById("modalTitle").innerText = "Ajouter un événement";
+
+            eventIdField.value = "";
+            dateField.value = date;
+            typeField.value = "";
+            titleField.value = "";
+            collabField.value = "";
+            notesField.value = "";
+            priorityField.value = "normal";
+
+            openModal();
         });
-}
-
-
-// ===========================
-//  FERMETURE DU MODAL
-// ===========================
-closeModal.onclick = () => modal.style.display = "none";
-
-window.onclick = function (event) {
-    if (event.target === modal) modal.style.display = "none";
-};
-
-
-// ===========================
-//  CLIC SUR LES CASES DU CALENDRIER
-// ===========================
-document.querySelectorAll(".day-cell").forEach(cell => {
-    cell.addEventListener("click", function (e) {
-        // éviter que cliquer dans un événement ouvre un "create"
-        if (e.target.classList.contains("event-item") ||
-            e.target.parentNode.classList.contains("event-item")) {
-            return;
-        }
-
-        const date = this.dataset.date;
-        openCreateEvent(date);
     });
-});
 
+    // OUVERTURE MODAL POUR EDITION D'UN EVENEMENT
+    document.querySelectorAll(".event-item").forEach(item => {
+        item.addEventListener("click", function (e) {
+            e.stopPropagation();
 
-// ===========================
-//  CLIC SUR UN ÉVÉNEMENT EXISTANT
-// ===========================
-document.querySelectorAll(".event-item").forEach(item => {
-    item.addEventListener("click", function (e) {
-        e.stopPropagation(); // empêche d'ouvrir create
+            const id = this.getAttribute("data-event-id");
 
-        const eventId = this.dataset.eventId;
-        openEditEvent(eventId);
-    });
-});
+            fetch(`/get_event/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("modalTitle").innerText = "Modifier un événement";
 
+                    eventIdField.value = data.id;
+                    dateField.value = data.date;
+                    typeField.value = data.type;
+                    titleField.value = data.title;
+                    collabField.value = data.collaborators;
+                    notesField.value = data.notes;
+                    priorityField.value = data.priority;
 
-// ===========================
-//  CLIC SUR LE BOUTON "AJOUTER"
-// ===========================
-const addEventBtn = document.getElementById("addEventBtn");
-if (addEventBtn) {
-    addEventBtn.addEventListener("click", () => {
-        openCreateEvent("");
-    });
-}
-
-
-// ===========================
-//  SAUVEGARDE FORMULAIRE
-// ===========================
-eventForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const payload = {
-        id: fieldId.value,
-        date: fieldDate.value,
-        type: fieldType.value,
-        title: fieldTitle.value,
-        collaborators: fieldCollab.value,
-        notes: fieldNotes.value,
-        priority: fieldPriority.value
-    };
-
-    fetch("/save_event", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === "success") {
-                window.location.reload();
-            } else {
-                alert("Erreur lors de l’enregistrement.");
-            }
+                    openModal();
+                });
         });
-});
+    });
 
+    // FERMETURE DU MODAL
+    closeBtn.addEventListener("click", closeModal);
+
+    window.addEventListener("click", function (event) {
+        if (event.target === modal) closeModal();
+    });
+
+    // ENVOI DU FORMULAIRE
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const payload = {
+            id: eventIdField.value,
+            date: dateField.value,
+            type: typeField.value,
+            title: titleField.value,
+            collaborators: collabField.value,
+            notes: notesField.value,
+            priority: priorityField.value
+        };
+
+        fetch("/save_event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+            .then(r => r.json())
+            .then(() => {
+                location.reload();
+            });
+
+    });
+
+});
