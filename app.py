@@ -58,13 +58,17 @@ def force_init_db():
 
     # ------------------------------------------------
     # Table des événements
+    # (on la recrée pour ajouter les nouveaux champs)
     # ------------------------------------------------
+    cursor.execute("DROP TABLE IF EXISTS events;")
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS events (
+        CREATE TABLE events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_email TEXT NOT NULL,
             title TEXT NOT NULL,
             event_date TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            collaborators TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -187,17 +191,19 @@ def api_add_event():
     data = request.get_json() or {}
     title = (data.get("title") or "").strip()
     event_date = data.get("event_date") or ""
+    event_type = (data.get("event_type") or "").strip()
+    collaborators = (data.get("collaborators") or "").strip()
 
-    if not title or not event_date:
+    if not title or not event_date or not event_type:
         return jsonify({"status": "error", "message": "Données manquantes"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO events (user_email, title, event_date)
-        VALUES (?, ?, ?);
-    """, (session["user"], title, event_date))
+        INSERT INTO events (user_email, title, event_date, event_type, collaborators)
+        VALUES (?, ?, ?, ?, ?);
+    """, (session["user"], title, event_date, event_type, collaborators))
 
     conn.commit()
     conn.close()
