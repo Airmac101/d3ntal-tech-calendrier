@@ -4,6 +4,7 @@ from flask import (
     request,
     redirect,
     session,
+    jsonify
 )
 import sqlite3
 import os
@@ -56,7 +57,7 @@ def force_init_db():
     """)
 
     # ------------------------------------------------
-    # 🔥 NOUVEAU : table des événements
+    # Table des événements
     # ------------------------------------------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS events (
@@ -173,6 +174,35 @@ def calendar_page():
         next_year=next_year,
         current_day=date.today(),
     )
+
+
+# ------------------------------------------------
+# API : AJOUT D'ÉVÉNEMENT (AJAX)
+# ------------------------------------------------
+@app.route("/api/add_event", methods=["POST"])
+def api_add_event():
+    if "user" not in session:
+        return jsonify({"status": "error", "message": "Non autorisé"}), 403
+
+    data = request.get_json() or {}
+    title = (data.get("title") or "").strip()
+    event_date = data.get("event_date") or ""
+
+    if not title or not event_date:
+        return jsonify({"status": "error", "message": "Données manquantes"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO events (user_email, title, event_date)
+        VALUES (?, ?, ?);
+    """, (session["user"], title, event_date))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success"}), 200
 
 
 # ------------------------------------------------
