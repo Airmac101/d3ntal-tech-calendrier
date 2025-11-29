@@ -50,15 +50,13 @@
             <tr>
                 {% for day in week %}
 
-                {% set classes = [] %}
-                {% if day.month != month %}
-                    {% do classes.append("other-month") %}
-                {% endif %}
-                {% if day == current_day %}
-                    {% do classes.append("today") %}
-                {% endif %}
+                {% set is_other = (day.month != month) %}
+                {% set is_today = (day == current_day) %}
 
-                <td class="{{ ' '.join(classes) }}">
+                <td class="
+                    {% if is_other %}other-month{% endif %}
+                    {% if is_today %} today{% endif %}
+                ">
                     {{ day.day }}
                 </td>
 
