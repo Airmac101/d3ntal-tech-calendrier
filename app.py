@@ -44,7 +44,6 @@ def force_init_db():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Table utilisateurs autorisés
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS authorized_users (
@@ -55,7 +54,6 @@ def force_init_db():
         """
     )
 
-    # Table événements
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS events (
@@ -85,7 +83,6 @@ def force_init_db():
     except:
         pass
 
-    # Seed utilisateurs autorisés
     pwd_hash = hash_password("D3ntalTech!@2025")
     authorized_emails = [
         "denismeuret01@gmail.com",
@@ -123,9 +120,6 @@ def check_credentials(email: str, password: str) -> bool:
 
 
 def event_type_to_css(event_type: str) -> str:
-    """
-    Mappe un type d'événement vers une classe CSS simple.
-    """
     t = (event_type or "").lower()
     if "rendez" in t or "patient" in t:
         return "rdv"
@@ -175,10 +169,11 @@ def calendar_page():
         return redirect("/")
 
     now = datetime.now()
+    today = date.today()
+
     year = int(request.args.get("year", now.year))
     month = int(request.args.get("month", now.month))
 
-    # Mois précédent / suivant
     prev_month = month - 1
     prev_year = year
     if prev_month < 1:
@@ -195,21 +190,19 @@ def calendar_page():
     month_days = cal.monthdatescalendar(year, month)
     month_name = calendar.month_name[month]
 
-    # Récupérer les événements du mois
+    # ----------- Récup événement MOIS -----------
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         """
         SELECT * FROM events
-        WHERE substr(event_date,1,4)=?
-        AND substr(event_date,6,2)=?
+        WHERE substr(event_date,1,4)=? AND substr(event_date,6,2)=?
         ORDER BY event_date,event_time;
         """,
         (str(year), f"{month:02d}"),
     )
     rows = cur.fetchall()
 
-    # Structure pour calendrier
     events_by_date = {}
     for r in rows:
         key = r["event_date"]
@@ -229,34 +222,43 @@ def calendar_page():
             }
         )
 
-    # ------------------------------------------------
-    # RÉCAPITULATIF HEBDOMADAIRE
-    # ------------------------------------------------
-    # Trouver la semaine du jour actuel affiché (milieu du mois)
-    middle_day = date(year, month, 15)
-    weekday_index = middle_day.weekday()  # 0=lundi
-    week_start = middle_day - timedelta(days=weekday_index)
+    # =====================================================================
+    #                 OPTION D : LOGIQUE DU RÉCAP HEBDOMADAIRE
+    # =====================================================================
+
+    # A) Si mois affiché == mois actuel → semaine contenant aujourd'hui
+    if year == today.year and month == today.month:
+        selected_day = today
+
+    else:
+        # B) Sinon → semaine contenant un événement du mois
+        if len(rows) > 0:
+            # Prendre le 1er événement du mois
+            selected_day = date.fromisoformat(rows[0]["event_date"])
+        else:
+            # C) Sinon → semaine du 1er du mois
+            selected_day = date(year, month, 1)
+
+    weekday_index = selected_day.weekday()  # 0 = lundi
+    week_start = selected_day - timedelta(days=weekday_index)
     week_end = week_start + timedelta(days=6)
 
+    # ----------- Récap : événements de la semaine sélectionnée -----------
     cur.execute(
         """
         SELECT * FROM events
         WHERE event_date BETWEEN ? AND ?
-        ORDER BY event_date, event_time;
+        ORDER BY event_date,event_time;
         """,
         (week_start.isoformat(), week_end.isoformat()),
     )
     week_rows = cur.fetchall()
     conn.close()
 
-    # Organiser par jour
     week_summary = {}
     for i in range(7):
         d = week_start + timedelta(days=i)
-        week_summary[d.isoformat()] = {
-            "date": d,
-            "events": []
-        }
+        week_summary[d.isoformat()] = {"date": d, "events": []}
 
     for r in week_rows:
         week_summary[r["event_date"]]["events"].append({
@@ -278,7 +280,7 @@ def calendar_page():
         prev_year=prev_year,
         next_month=next_month,
         next_year=next_year,
-        current_day=date.today(),
+        current_day=today,
         events_by_date=events_by_date,
         week_summary=week_summary,
         week_start=week_start,
@@ -287,7 +289,7 @@ def calendar_page():
 
 
 # ------------------------------------------------
-# API : AJOUT / MISE À JOUR / SUPPRESSION
+# API EVENTS
 # ------------------------------------------------
 @app.route("/api/add_event", methods=["POST"])
 def api_add_event():
