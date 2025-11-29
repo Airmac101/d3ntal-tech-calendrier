@@ -53,7 +53,8 @@
                 {% set day_key = day.isoformat() %}
                 {% set day_events = events_by_date.get(day_key, []) %}
 
-                <td class="{% if is_other %}other-month{% endif %}{% if is_today %} today{% endif %}">
+                <td class="calendar-day{% if is_other %} other-month{% endif %}{% if is_today %} today{% endif %}"
+                    data-date="{{ day_key }}">
                     <div class="day-number">{{ day.day }}</div>
 
                     {% for ev in day_events %}
@@ -85,41 +86,47 @@
             {% endfor %}
         </table>
 
-        <!-- RÉCAPITULATIF HEBDOMADAIRE -->
+        <!-- RÉCAPITULATIF DU MOIS -->
         <div class="weekly-summary-box">
-            <h3>Récapitulatif de la semaine :
+            <h3>Récapitulatif du mois :
                 {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}
             </h3>
 
             <div class="weekly-summary-list">
-                {% for day_key, d in week_summary.items() %}
+                {% if week_summary|length == 0 %}
                     <div class="week-line">
-                        <span class="week-day">
-                            {{ d.date.strftime('%A %d %B').capitalize() }} :
-                        </span>
-
-                        {% if d.events|length == 0 %}
-                            <span class="week-none">—</span>
-                        {% else %}
-                            {% for ev in d.events %}
-                                {% set label_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
-                                <span class="week-event">
-                                    <span class="priority priority-{{ ev.priority|lower }}">
-                                        [{{ ev.priority|upper }}]
-                                    </span>
-                                    {{ label_time }} — {{ ev.type }} — {{ ev.title }}
-                                    {% if ev.collab %}
-                                        ({{ ev.collab }})
-                                    {% endif %}
-                                    {% if ev.notes %}
-                                        — <em>{{ ev.notes }}</em>
-                                    {% endif %}
-                                </span>
-                                {% if not loop.last %} | {% endif %}
-                            {% endfor %}
-                        {% endif %}
+                        <span class="week-none">Aucun événement enregistré pour ce mois en cours.</span>
                     </div>
-                {% endfor %}
+                {% else %}
+                    {% for day_key, d in week_summary.items()|sort(attribute='1.date') %}
+                        <div class="week-line">
+                            <span class="week-day">
+                                {{ d.date.strftime('%A %d %B').capitalize() }} :
+                            </span>
+
+                            {% if d.events|length == 0 %}
+                                <span class="week-none">—</span>
+                            {% else %}
+                                {% for ev in d.events %}
+                                    {% set label_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
+                                    <span class="week-event">
+                                        <span class="priority priority-{{ ev.priority|lower }}">
+                                            [{{ ev.priority|upper }}]
+                                        </span>
+                                        {{ label_time }} — {{ ev.type }} — {{ ev.title }}
+                                        {% if ev.collab %}
+                                            ({{ ev.collab }})
+                                        {% endif %}
+                                        {% if ev.notes %}
+                                            — <em>{{ ev.notes }}</em>
+                                        {% endif %}
+                                    </span>
+                                    {% if not loop.last %} | {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
 
@@ -127,7 +134,7 @@
 
     <!-- MODALE AJOUT / EDIT -->
     <div class="modal-overlay" id="modalOverlay">
-        <div class="modal-box">
+        <div class="modal-box" id="modalBox">
             <span class="close-btn" id="closeModalBtn">&times;</span>
             <h3 id="modalTitle">Ajouter un événement</h3>
 
@@ -189,9 +196,13 @@
         </div>
     </div>
 
+    <!-- MENU CONTEXTUEL JOUR -->
+    <div id="dayContextMenu" class="context-menu" style="display:none;"></div>
+
     <!-- SCRIPT -->
     <script>
         const modalOverlay = document.getElementById("modalOverlay");
+        const modalBox = document.getElementById("modalBox");
         const openModalBtn = document.getElementById("openModalBtn");
         const closeModalBtn = document.getElementById("closeModalBtn");
 
@@ -211,17 +222,21 @@
         const saveBtn = document.getElementById("saveEventBtn");
         const deleteBtn = document.getElementById("deleteEventBtn");
 
+        const contextMenu = document.getElementById("dayContextMenu");
+
         let editingEventId = null;
 
-        // Ouvrir le picker natif sur clic dans les champs
+        // Forcer le picker natif sur clic
         if (dateInput && dateInput.showPicker) {
             dateInput.addEventListener("click", () => dateInput.showPicker());
         }
         if (timeInput && timeInput.showPicker) {
-            timeInput.addEventListener("click", () => timeInput.showPicker());
+            timeInput.addEventListener("click", () => {
+                if (!allDayCheckbox.checked) timeInput.showPicker();
+            });
         }
 
-        // Gestion journée entière → désactiver/activer champ heure
+        // Gestion journée entière → désactiver l’heure
         allDayCheckbox.addEventListener("change", () => {
             if (allDayCheckbox.checked) {
                 timeInput.disabled = true;
@@ -255,16 +270,119 @@
             collabOtherInput.value = "";
         }
 
+        // Ouvrir la modale à une position donnée (proche du clic)
+        function openModalAt(x, y) {
+            modalOverlay.style.display = "block";
+
+            // Positionner la boîte proche du clic
+            const boxWidth = 540;
+            const boxHeight = 400;
+
+            let left = x;
+            let top = y;
+
+            if (left + boxWidth > window.innerWidth - 20) {
+                left = window.innerWidth - boxWidth - 20;
+            }
+            if (top + boxHeight > window.innerHeight - 20) {
+                top = window.innerHeight - boxHeight - 20;
+            }
+
+            if (left < 20) left = 20;
+            if (top < 20) top = 20;
+
+            modalBox.style.position = "fixed";
+            modalBox.style.left = left + "px";
+            modalBox.style.top = top + "px";
+        }
+
+        function openAddEventModalForDate(dateStr, clickX, clickY) {
+            resetModal();
+            dateInput.value = dateStr || "";
+            openModalAt(clickX, clickY);
+        }
+
+        function openEditModalFromBadge(badge, clickX, clickY) {
+            editingEventId = badge.dataset.eventId;
+            document.getElementById("modalTitle").innerText = "Modifier l’événement";
+            saveBtn.textContent = "Mettre à jour";
+            deleteBtn.style.display = "block";
+
+            titleInput.value = badge.dataset.eventTitle || "";
+            dateInput.value = badge.dataset.eventDate || "";
+            timeInput.value = badge.dataset.eventTime || "";
+
+            if ((badge.dataset.eventTime || "") === "00:00") {
+                allDayCheckbox.checked = true;
+                timeInput.disabled = true;
+            } else {
+                allDayCheckbox.checked = false;
+                timeInput.disabled = false;
+            }
+
+            const type = badge.dataset.eventType || "";
+            const known = [
+                "Rendez-vous Client",
+                "Rendez-vous Fournisseur",
+                "Réunion interne",
+                "Administration",
+                "Urgence cabinet",
+                "Formation"
+            ];
+            if (known.includes(type)) {
+                typeSelect.value = type;
+                typeSelect.dispatchEvent(new Event("change"));
+            } else {
+                typeSelect.value = "Autre";
+                typeSelect.dispatchEvent(new Event("change"));
+                typeCustomInput.value = type;
+            }
+
+            prioritySelect.value = badge.dataset.eventPriority || "Normal";
+            notesInput.value = badge.dataset.eventNotes || "";
+
+            document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+            collabOtherCheckbox.checked = false;
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
+
+            const raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
+            let rest = [];
+
+            raw.forEach(v => {
+                const L = v.toLowerCase();
+                if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
+                else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
+                else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
+                else if (v) rest.push(v);
+            });
+
+            if (rest.length > 0) {
+                collabOtherCheckbox.checked = true;
+                collabOtherInput.style.display = "block";
+                collabOtherInput.value = rest.join(", ");
+            }
+
+            openModalAt(clickX, clickY);
+        }
+
+        // Bouton global Ajouter
         openModalBtn.onclick = (e) => {
             e.preventDefault();
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 3;
             resetModal();
-            modalOverlay.style.display = "flex";
+            openModalAt(centerX, centerY);
         };
 
-        closeModalBtn.onclick = () => modalOverlay.style.display = "none";
+        closeModalBtn.onclick = () => {
+            modalOverlay.style.display = "none";
+        };
+
         modalOverlay.onclick = (e) => {
-            if (e.target === modalOverlay)
+            if (e.target === modalOverlay) {
                 modalOverlay.style.display = "none";
+            }
         };
 
         typeSelect.onchange = () => {
@@ -283,70 +401,98 @@
                 collabOtherInput.value = "";
         };
 
+        // Ancien comportement : clic direct sur le badge = modifier directement
         document.querySelectorAll(".event-badge").forEach(b => {
-            b.onclick = () => {
-                editingEventId = b.dataset.eventId;
-                document.getElementById("modalTitle").innerText = "Modifier l’événement";
-                saveBtn.textContent = "Mettre à jour";
-                deleteBtn.style.display = "block";
-                modalOverlay.style.display = "flex";
-
-                titleInput.value = b.dataset.eventTitle || "";
-                dateInput.value = b.dataset.eventDate || "";
-                timeInput.value = b.dataset.eventTime || "";
-
-                // Re-déduire allDay depuis l'heure
-                if ((b.dataset.eventTime || "") === "00:00") {
-                    allDayCheckbox.checked = true;
-                    timeInput.disabled = true;
-                } else {
-                    allDayCheckbox.checked = false;
-                    timeInput.disabled = false;
-                }
-
-                const type = b.dataset.eventType || "";
-                const known = [
-                    "Rendez-vous Client",
-                    "Rendez-vous Fournisseur",
-                    "Réunion interne",
-                    "Administration",
-                    "Urgence cabinet",
-                    "Formation"
-                ];
-                if (known.includes(type)) {
-                    typeSelect.value = type;
-                    typeSelect.dispatchEvent(new Event("change"));
-                } else {
-                    typeSelect.value = "Autre";
-                    typeSelect.dispatchEvent(new Event("change"));
-                    typeCustomInput.value = type;
-                }
-
-                prioritySelect.value = b.dataset.eventPriority || "Normal";
-                notesInput.value = b.dataset.eventNotes || "";
-
-                document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
-                collabOtherCheckbox.checked = false;
-                collabOtherInput.style.display = "none";
-                collabOtherInput.value = "";
-
-                const raw = (b.dataset.eventCollaborators || "").split(",").map(v => v.trim());
-                let rest = [];
-
-                raw.forEach(v => {
-                    const L = v.toLowerCase();
-                    if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
-                    else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
-                    else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
-                    else rest.push(v);
-                });
-
-                if (rest.length > 0) {
-                    collabOtherCheckbox.checked = true;
-                    collabOtherInput.style.display = "block";
-                    collabOtherInput.value = rest.join(", ");
-                }
+            b.onclick = (evt) => {
+                evt.stopPropagation(); // ne pas déclencher le menu de la case
+                const rect = b.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                openEditModalFromBadge(b, x, y);
             };
+        });
+
+        // MENU CONTEXTUEL PAR JOUR
+        function buildAndShowContextMenuForDayCell(td, clickX, clickY) {
+            const dateStr = td.dataset.date;
+            const badges = td.querySelectorAll(".event-badge");
+
+            let html = "";
+            html += `<div class="context-item" data-action="add" data-date="${dateStr}">➕ Ajouter un événement</div>`;
+
+            badges.forEach(b => {
+                const time = b.dataset.eventTime || "";
+                const type = b.dataset.eventType || "";
+                const title = b.dataset.eventTitle || "";
+                const labelTime = (time === "00:00") ? "Journée entière" : time;
+                const label = `✏️ Modifier : ${type} (${labelTime}) — ${title}`;
+                html += `<div class="context-item" data-action="edit" data-event-id="${b.dataset.eventId}" data-date="${dateStr}">${label}</div>`;
+            });
+
+            contextMenu.innerHTML = html;
+            contextMenu.style.display = "block";
+
+            let left = clickX;
+            let top = clickY;
+
+            const menuWidth = 260;
+            const menuHeight = 40 + 30 * badges.length;
+
+            if (left + menuWidth > window.innerWidth - 10)
+                left = window.innerWidth - menuWidth - 10;
+            if (top + menuHeight > window.innerHeight - 10)
+                top = window.innerHeight - menuHeight - 10;
+            if (left < 10) left = 10;
+            if (top < 10) top = 10;
+
+            contextMenu.style.left = left + "px";
+            contextMenu.style.top = top + "px";
+        }
+
+        document.querySelectorAll(".calendar-day").forEach(td => {
+            td.addEventListener("click", (e) => {
+                // Si on clique sur un badge directement, on laisse le handler du badge gérer
+                if (e.target.closest(".event-badge")) {
+                    return;
+                }
+                e.stopPropagation();
+
+                const rect = td.getBoundingClientRect();
+                const x = e.clientX || (rect.left + rect.width / 2);
+                const y = e.clientY || (rect.top + rect.height / 2);
+
+                buildAndShowContextMenuForDayCell(td, x, y);
+            });
+        });
+
+        // Clic sur le menu contextuel
+        contextMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const item = e.target.closest(".context-item");
+            if (!item) return;
+
+            const action = item.dataset.action;
+            const dateStr = item.dataset.date;
+            const clickRect = contextMenu.getBoundingClientRect();
+            const clickX = clickRect.left + clickRect.width / 2;
+            const clickY = clickRect.top + clickRect.height / 2;
+
+            contextMenu.style.display = "none";
+
+            if (action === "add") {
+                openAddEventModalForDate(dateStr, clickX, clickY);
+            } else if (action === "edit") {
+                const eventId = item.dataset.eventId;
+                const badge = document.querySelector(`.event-badge[data-event-id="${eventId}"]`);
+                if (badge) {
+                    openEditModalFromBadge(badge, clickX, clickY);
+                }
+            }
+        });
+
+        // Fermer le menu contextuel en cliquant ailleurs
+        document.addEventListener("click", () => {
+            contextMenu.style.display = "none";
         });
 
         saveBtn.onclick = async () => {
@@ -361,10 +507,9 @@
             let eventType = typeSelect.value;
             if (eventType === "Autre") eventType = typeCustomInput.value.trim();
 
-            // Gestion heure / journée entière
             let eventTimeValue = timeInput.value;
             if (allDayCheckbox.checked) {
-                eventTimeValue = "00:00"; // convention journée entière
+                eventTimeValue = "00:00";
             }
 
             const payload = {
