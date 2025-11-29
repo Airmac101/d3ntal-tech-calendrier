@@ -1,29 +1,149 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Accès D3NTAL TECH</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+/* GLOBAL PAGE STYLE */
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: #f5f7fb;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
 
-<div class="container">
-    <h1>D3NTAL TECH</h1>
-    <h2>Connexion sécurisée</h2>
+/* GENERIC CONTAINER */
+.container {
+    width: 95%;
+    max-width: 900px;
+    margin: 40px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
 
-    <form method="POST">
-        <label>Email autorisé</label>
-        <input type="email" name="email" required>
+/* TITLES */
+h1, h2 {
+    text-align: center;
+    margin-bottom: 15px;
+    color: #1a3d8f;
+}
 
-        <button type="submit">Se connecter</button>
-    </form>
+/* BUTTONS */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #1a3d8f;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <p class="error">{{ messages[0] }}</p>
-        {% endif %}
-    {% endwith %}
-</div>
+button:hover {
+    background-color: #264fb5;
+}
 
-</body>
-</html>
+/* INPUT FIELDS */
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: 1px solid #cccccc;
+    font-size: 16px;
+}
+
+/* ERROR MESSAGE */
+.error {
+    color: #b00020;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+/* LOGOUT LINK */
+.logout {
+    display: block;
+    text-align: center;
+    margin-top: 25px;
+    font-weight: bold;
+    color: #1a3d8f;
+    text-decoration: none;
+}
+
+.logout:hover {
+    text-decoration: underline;
+}
+
+/* CALENDAR NAVIGATION */
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.nav-btn {
+    padding: 10px 15px;
+    background: #1a3d8f;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.nav-btn:hover {
+    background: #264fb5;
+}
+
+/* CALENDAR TABLE */
+.calendar {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    table-layout: fixed;
+}
+
+/* HEADER OF WEEK */
+.calendar th {
+    background-color: #1a3d8f;
+    color: white;
+    padding: 10px;
+    font-size: 18px;
+    border: 1px solid #dee2e6;
+}
+
+/* CALENDAR CELLS */
+.calendar td {
+    border: 1px solid #dee2e6;
+    height: 110px;
+    text-align: left;
+    vertical-align: top;
+    padding: 10px;
+    font-size: 18px;
+    background: #fff;
+    transition: 0.2s;
+}
+
+/* HOVER EFFECT */
+.calendar td:hover {
+    background: #e9f0ff;
+    cursor: pointer;
+    border-color: #1a3d8f;
+}
+
+/* DAYS OUTSIDE THE CURRENT MONTH */
+.other-month {
+    background: #f0f2f7;
+    color: #888;
+}
+
+/* TODAY HIGHLIGHT */
+.today {
+    background: #cfe2ff !important;
+    border: 2px solid #1a3d8f !important;
+}
