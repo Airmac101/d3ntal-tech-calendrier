@@ -1,4 +1,4 @@
-from flask import (
+Oui, envoie app.py COMPLET FINAL maintenant.”from flask import (
     Flask,
     render_template,
     request,
@@ -477,6 +477,126 @@ def api_delete_event():
     )
     conn.commit()
     conn.close()
+
+    return jsonify({"status": "success"})
+# ------------------------------------------------
+# GET SINGLE EVENT FOR MODAL (EDIT)
+# ------------------------------------------------
+
+@app.route("/event/<int:event_id>")
+def get_single_event(event_id):
+    if "user" not in session:
+        return jsonify({"status": "error", "message": "unauthorized"}), 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM events WHERE id=? AND user_email=?",
+        (event_id, session["user"]),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"status": "error", "message": "not_found"}), 404
+
+    return jsonify({
+        "id": row["id"],
+        "date": row["event_date"],
+        "type": row["event_type"],
+        "title": row["title"],
+        "collaborators": row["collaborators"],
+        "notes": row["notes"],
+        "priority": row["priority"],
+    })
+
+
+# ------------------------------------------------
+# SAVE EVENT (CREATE OR UPDATE)
+# ------------------------------------------------
+
+@app.route("/save_event", methods=["POST"])
+def save_event():
+    if "user" not in session:
+        return jsonify({"status": "error", "message": "unauthorized"}), 403
+
+    data = request.get_json() or {}
+    event_id = data.get("id")
+
+    title = data.get("title", "").strip()
+    event_date = data.get("date", "").strip()
+    event_type = data.get("type", "").strip()
+    collaborators = data.get("collaborators", "").strip()
+    priority = data.get("priority", "Normal").strip()
+    notes = data.get("notes", "").strip()
+
+    if not title or not event_date or not event_type:
+        return jsonify({"status": "error", "message": "missing_fields"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Conserver l'heure existante
+    if event_id:
+        cur.execute(
+            "SELECT event_time FROM events WHERE id=? AND user_email=?",
+            (event_id, session["user"]),
+        )
+        row = cur.fetchone()
+        event_time = row["event_time"] if row else "00:00"
+    else:
+        event_time = "00:00"
+
+    if event_id:
+        # UPDATE
+        cur.execute(
+            """
+            UPDATE events SET
+              title=?, event_date=?, event_time=?, event_type=?,
+              collaborators=?, priority=?, notes=?
+            WHERE id=? AND user_email=?
+            """,
+            (
+                title, event_date, event_time, event_type,
+                collaborators, priority, notes,
+                event_id, session["user"],
+            ),
+        )
+        action_label = "Événement modifié"
+        subject = "D3NTAL TECH — Événement modifié"
+
+    else:
+        # INSERT
+        cur.execute(
+            """
+            INSERT INTO events
+              (user_email, title, event_date, event_time, event_type, collaborators, priority, notes)
+            VALUES (?,?,?,?,?,?,?,?)
+            """,
+            (
+                session["user"], title, event_date, event_time,
+                event_type, collaborators, priority, notes
+            ),
+        )
+        action_label = "Nouvel événement"
+        subject = "D3NTAL TECH — Nouvel événement"
+
+    conn.commit()
+    conn.close()
+
+    # Envoi email HTML
+    html = build_event_email(
+        action_label,
+        title,
+        event_date,
+        event_time,
+        event_type,
+        collaborators,
+        priority,
+        notes,
+        session["user"],
+    )
+    send_event_email(subject, html)
 
     return jsonify({"status": "success"})
 
