@@ -31,22 +31,21 @@ def calendar_view():
     if "user" not in session:
         return redirect("/")
 
-    # GET parameters: /calendar?year=2025&month=11
+    today = datetime.today()
+    current_day = today.date()
+
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
 
-    today = datetime.today()
+    if not year:
+        year = today.year
+    if not month:
+        month = today.month
 
-    # If no year/month provided → use today
-    if not year: year = today.year
-    if not month: month = today.month
-
-    # Calendar logic
-    cal = calendar.Calendar()
+    cal = calendar.Calendar(firstweekday=0)
     calendar_days = cal.monthdatescalendar(year, month)
     month_name = calendar.month_name[month]
 
-    # Navigation
     prev_month = month - 1
     next_month = month + 1
     prev_year = year
@@ -70,6 +69,7 @@ def calendar_view():
         prev_year=prev_year,
         next_month=next_month,
         next_year=next_year,
+        current_day=current_day
     )
 
 
