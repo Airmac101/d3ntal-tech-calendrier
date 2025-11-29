@@ -9,7 +9,7 @@ from flask import (
 import sqlite3
 import os
 import calendar
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import hashlib
 
 # ------------------------------------------------
@@ -58,7 +58,7 @@ def force_init_db():
 
     # ------------------------------------------------
     # Table des événements
-    # (on la recrée pour ajouter les nouveaux champs, y compris l'heure)
+    # (on la recrée pour ajouter/modifier les champs)
     # ------------------------------------------------
     cursor.execute("DROP TABLE IF EXISTS events;")
     cursor.execute("""
@@ -108,6 +108,41 @@ def check_credentials(email: str, password: str) -> bool:
         return False
 
     return row["password_hash"] == hash_password(password)
+
+
+def format_collaborators(collaborators_raw: str) -> str:
+    """
+    Transforme la chaîne brute "Denis,isis@...,assistante@..."
+    en prénoms propres : "Denis, Isis, Assistante, Jean Dupont"
+    """
+    if not collaborators_raw:
+        return ""
+
+    items = [c.strip() for c in collaborators_raw.split(",") if c.strip()]
+    display = []
+
+    for val in items:
+        lower = val.lower()
+
+        if "isis" in lower:
+            display.append("Isis")
+        elif "denis" in lower:
+            display.append("Denis")
+        elif "assist" in lower:
+            display.append("Assistante")
+        else:
+            # Email : on garde la partie avant @
+            if "@" in val:
+                local = val.split("@", 1)[0]
+            else:
+                local = val
+
+            # Remplace . et _ par espace, met une majuscule au début de chaque mot
+            local = local.replace(".", " ").replace("_", " ")
+            pretty = " ".join(p.capitalize() for p in local.split())
+            display.append(pretty or val)
+
+    return ", ".join(display)
 
 
 # ------------------------------------------------
@@ -167,6 +202,42 @@ def calendar_page():
     month_days = cal.monthdatescalendar(year, month)
     month_name = calendar.month_name[month]
 
+    # ------------------------------
+    # Récupération des événements du mois
+    # ------------------------------
+    start_date = date(year, month, 1)
+    if month == 12:
+        end_date = date(year + 1, 1, 1)
+    else:
+        end_date = date(year, month + 1, 1)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT id, user_email, title, event_date, event_time, event_type, collaborators
+        FROM events
+        WHERE user_email = ?
+          AND event_date >= ?
+          AND event_date < ?
+        ORDER BY event_date ASC, event_time ASC;
+        """,
+        (session["user"], start_date.isoformat(), end_date.isoformat()),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Dictionnaire : "YYYY-MM-DD" -> [événements...]
+    events_by_date = {}
+    for row in rows:
+        d = row["event_date"]
+        events_by_date.setdefault(d, []).append({
+            "time": row["event_time"],
+            "title": row["title"],
+            "type": row["event_type"],
+            "collaborators": format_collaborators(row["collaborators"] or ""),
+        })
+
     return render_template(
         "calendar.html",
         calendar_days=month_days,
@@ -178,6 +249,7 @@ def calendar_page():
         next_month=next_month,
         next_year=next_year,
         current_day=date.today(),
+        events_by_date=events_by_date,
     )
 
 
