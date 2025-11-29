@@ -109,7 +109,20 @@ def force_init_db():
     );
     """)
 
-    # events
+    # Fix: INSERT with explicit columns (3rd column auto-filled)
+    pwd = hash_password("D3ntalTech!@2025")
+    for email in [
+        "denismeuret01@gmail.com",
+        "isis.stouvenel@d3ntal-tech.fr",
+        "isis.42420@gmail.com",
+        "denismeuret@d3ntal-tech.fr",
+    ]:
+        cur.execute("""
+            INSERT OR REPLACE INTO authorized_users (email, password_hash)
+            VALUES (?, ?)
+        """, (email, pwd))
+
+    # events table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,18 +137,6 @@ def force_init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
-
-    pwd = hash_password("D3ntalTech!@2025")
-    for email in [
-        "denismeuret01@gmail.com",
-        "isis.stouvenel@d3ntal-tech.fr",
-        "isis.42420@gmail.com",
-        "denismeuret@d3ntal-tech.fr",
-    ]:
-        cur.execute(
-            "INSERT OR REPLACE INTO authorized_users VALUES (?,?)",
-            (email, pwd),
-        )
 
     conn.commit()
     conn.close()
@@ -238,7 +239,7 @@ def calendar_page():
         next_year=next_year,
         current_day=date.today(),
         events_by_date=events_by_date,
-        week_summary={},  # not used here
+        week_summary={},  
         week_start=date(year, month, 1),
         week_end=date(year, month, calendar.monthrange(year, month)[1]),
     )
