@@ -18,34 +18,62 @@ app = Flask(__name__)
 app.secret_key = "SUPER_SECRET_KEY_D3NTAL_TECH_2025"
 
 DB_PATH = os.path.join("db", "database.db")
-SALT = "D3NTAL_TECH_SUPER_SALT_2025"  # doit être identique à init_db.py
+SALT = "D3NTAL_TECH_SUPER_SALT_2025"
 
 
 # ------------------------------------------------
 # UTILS DB & HASH
 # ------------------------------------------------
 def hash_password(plain_password: str) -> str:
-    """
-    Retourne le hash SHA256 du mot de passe avec le sel.
-    """
     to_hash = (SALT + plain_password).encode("utf-8")
     return hashlib.sha256(to_hash).hexdigest()
 
 
 def get_db_connection():
-    """
-    Retourne une connexion SQLite sur db/database.db.
-    """
     os.makedirs("db", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
+def force_init_db():
+    """
+    Force l'initialisation de la DB à chaque démarrage
+    (nécessaire pour Render).
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS authorized_users (
+            email TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+    # Mot de passe unique hashé
+    pwd_hash = hash_password("D3ntalTech!@2025")
+
+    authorized_emails = [
+        "denismeuret01@gmail.com",
+        "isis.stouvenel@d3ntal-tech.fr",
+        "isis.42420@gmail.com",
+        "denismeuret@d3ntal-tech.fr",
+    ]
+
+    for email in authorized_emails:
+        cursor.execute("""
+            INSERT OR REPLACE INTO authorized_users (email, password_hash)
+            VALUES (?, ?);
+        """, (email, pwd_hash))
+
+    conn.commit()
+    conn.close()
+
+
 def check_credentials(email: str, password: str) -> bool:
-    """
-    Vérifie que l'email existe et que le mot de passe correspond.
-    """
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -58,12 +86,11 @@ def check_credentials(email: str, password: str) -> bool:
     if not row:
         return False
 
-    stored_hash = row["password_hash"]
-    return stored_hash == hash_password(password)
+    return row["password_hash"] == hash_password(password)
 
 
 # ------------------------------------------------
-# ROUTE: LOGIN
+# ROUTE LOGIN
 # ------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -83,7 +110,7 @@ def login():
 
 
 # ------------------------------------------------
-# ROUTE: LOGOUT
+# LOGOUT
 # ------------------------------------------------
 @app.route("/logout")
 def logout():
@@ -92,19 +119,17 @@ def logout():
 
 
 # ------------------------------------------------
-# ROUTE: CALENDRIER PROTÉGÉ
+# CALENDAR (PROTÉGÉ)
 # ------------------------------------------------
 @app.route("/calendar")
 def calendar_page():
     if "user" not in session:
         return redirect("/")
 
-    # Date actuelle
     now = datetime.now()
     year = int(request.args.get("year", now.year))
     month = int(request.args.get("month", now.month))
 
-    # Navigation mois précédent / suivant
     prev_month = month - 1
     prev_year = year
     if prev_month < 1:
@@ -117,8 +142,7 @@ def calendar_page():
         next_month = 1
         next_year += 1
 
-    # Génération des jours du mois
-    cal = calendar.Calendar(firstweekday=0)  # 0 = lundi pour Python
+    cal = calendar.Calendar(firstweekday=0)
     month_days = cal.monthdatescalendar(year, month)
     month_name = calendar.month_name[month]
 
@@ -137,13 +161,12 @@ def calendar_page():
 
 
 # ------------------------------------------------
-# MAIN LOCAL
+# MAIN LOCAL + RENDER
 # ------------------------------------------------
 if __name__ == "__main__":
-    # Initialisation DB si nécessaire
-    if not os.path.exists(DB_PATH):
-        from init_db import init_db
-
-        init_db()
-
+    force_init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+# IMPORTANT : Render ignore "__main__"
+# DONC on force l’init dès l'import !
+force_init_db()
