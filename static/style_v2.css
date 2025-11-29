@@ -37,55 +37,6 @@ html, body {
 }
 
 /* ===========================
-   LOGIN PAGE (restaurée comme avant)
-=========================== */
-.login-container {
-    width: 100%;
-    max-width: 420px;
-    margin: 120px auto;
-    background: white;
-    padding: 25px 30px;
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-}
-
-.login-container h1 {
-    text-align: center;
-    color: #1a3d8f;
-    margin-bottom: 10px;
-}
-
-.login-container h2 {
-    margin-top: 10px;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.login-container input[type=text],
-.login-container input[type=password] {
-    width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    font-size: 15px;
-    border: 1px solid #aaa;
-    border-radius: 8px;
-    box-sizing: border-box;
-}
-
-.login-container input[type=submit] {
-    margin-top: 18px;
-    width: 100%;
-    padding: 12px;
-    background: #1a3d8f;
-    border: none;
-    color: white;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-/* ===========================
    CONTAINER CALENDRIER
 =========================== */
 .container {
@@ -197,7 +148,7 @@ html, body {
 }
 
 /* ===========================
-   RÉCAP HEBDOMADAIRE
+   RÉCAP HEBDOMADAIRE / MENSUEL
 =========================== */
 .weekly-summary-box {
     background: white;
@@ -269,7 +220,7 @@ html, body {
     color: #1a3d8f;
 }
 
-/* INPUTS MODALE — 100% CLIQUABLES */
+/* INPUTS — 100% CLIQUABLES */
 .modal-box input[type=text],
 .modal-box input[type=date],
 .modal-box input[type=time],
@@ -291,7 +242,6 @@ html, body {
     cursor: pointer;
 }
 
-/* NOTES */
 .notes-textarea {
     font-size: 11px;
     color: #000;
