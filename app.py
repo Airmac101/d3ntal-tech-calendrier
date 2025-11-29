@@ -44,11 +44,26 @@ def force_init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Table
+    # ------------------------------------------------
+    # Table utilisateurs autorisés
+    # ------------------------------------------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS authorized_users (
             email TEXT PRIMARY KEY,
             password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+    # ------------------------------------------------
+    # 🔥 NOUVEAU : table des événements
+    # ------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT NOT NULL,
+            title TEXT NOT NULL,
+            event_date TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
