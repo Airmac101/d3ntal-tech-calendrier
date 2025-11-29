@@ -1,167 +1,167 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Calendrier — D3NTAL TECH</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendrier</title>
     <link rel="stylesheet" href="/static/style_v2.css">
 </head>
 <body>
 
-<!-- BARRE BLEUE -->
-<div class="top-bar">
-    <div class="logo">D3NTAL TECH</div>
-    <a class="logout-btn" href="/logout">Déconnexion</a>
-</div>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="logo">D3NTAL-TECH — Calendrier</div>
+        <a href="/logout" class="logout-btn">Déconnexion</a>
+    </div>
 
-<!-- CONTENEUR CALENDRIER -->
-<div class="calendar-container">
+    <!-- CALENDAR WRAPPER -->
+    <div class="calendar-container">
 
-    <!-- HEADER CALENDRIER -->
-    <div class="calendar-header">
+        <!-- HEADER / NAV -->
+        <div class="calendar-header">
+            <button class="btn-nav" onclick="window.location='?year={{ prev_year }}&month={{ prev_month }}'">⟵ Précédent</button>
 
-        <!-- Mois précédent -->
-        <a href="/calendar?year={{ prev_year }}&month={{ prev_month }}" class="btn-nav">
-            ← Mois précédent
-        </a>
+            <div class="month-title-wrapper">
+                <h2 class="month-title">{{ month_name }} {{ year }}</h2>
+                <a class="btn-export-inline" href="/export_pdf" target="_blank">
+                    <button class="btn-nav" style="background:#0c6efd;">📄 Export PDF</button>
+                </a>
+            </div>
 
-        <!-- Titre du mois + bouton PDF -->
-        <div class="month-title-wrapper">
-            <h2 class="month-title">{{ month_name }} {{ year }}</h2>
+            <button class="btn-nav" onclick="window.location='?year={{ next_year }}&month={{ next_month }}'">Suivant ⟶</button>
 
-            <!-- EXPORT PDF -->
-            <a href="/export_pdf" class="btn-export-inline">📄 Export PDF</a>
+            <button id="addEventBtn" class="btn-add">+ Ajouter un évènement</button>
         </div>
 
-        <!-- Mois suivant -->
-        <a href="/calendar?year={{ next_year }}&month={{ next_month }}" class="btn-nav">
-            Mois suivant →
-        </a>
+        <!-- CALENDAR TABLE -->
+        <table class="calendar-table">
+            <thead>
+                <tr>
+                    <th>Lundi</th>
+                    <th>Mardi</th>
+                    <th>Mercredi</th>
+                    <th>Jeudi</th>
+                    <th>Vendredi</th>
+                    <th>Samedi</th>
+                    <th>Dimanche</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar_days %}
+                <tr>
+                    {% for day in week %}
+                    <td class="day-cell {% if day == current_day %}today{% endif %}"
+                        data-date="{{ day.isoformat() }}">
+                        
+                        <div class="day-number">{{ day.day }}</div>
 
-        <!-- Ajouter un événement -->
-        <button id="addEventBtn" class="btn-add">
-            + Ajouter un événement
-        </button>
-    </div>
-
-    <!-- TABLEAU CALENDRIER -->
-    <table class="calendar-table">
-        <thead>
-        <tr>
-            <th>Lundi</th>
-            <th>Mardi</th>
-            <th>Mercredi</th>
-            <th>Jeudi</th>
-            <th>Vendredi</th>
-            <th>Samedi</th>
-            <th>Dimanche</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for week in calendar_days %}
-            <tr>
-                {% for d in week %}
-                    <td class="day-cell {% if d == current_day %}today{% endif %}"
-                        data-date="{{ d }}">
-
-                        <div class="day-number">{{ d.day }}</div>
-
-                        {% if events_by_date[d.isoformat()] %}
-                            <div class="events-container">
-                                {% for ev in events_by_date[d.isoformat()] %}
-                                    <div class="event-item {{ ev.css_class }}"
-                                         data-event-id="{{ ev.id }}">
-                                        <strong>{{ ev.title }}</strong><br>
-                                        <span>{{ ev.type }}</span><br>
-                                        <small>— {{ ev.collaborators }}</small>
-                                    </div>
-                                {% endfor %}
+                        <div class="events-container">
+                            {% for ev in events_by_date[day.isoformat()] %}
+                            <div class="event-item {{ ev.css_class }}"
+                                 data-event-id="{{ ev.id }}">
+                                
+                                {% if ev.all_day %}
+                                    🕘 Journée entière — {{ ev.title }}
+                                {% else %}
+                                    {{ ev.time }} — {{ ev.title }}
+                                {% endif %}
                             </div>
-                        {% endif %}
+                            {% endfor %}
+                        </div>
+
                     </td>
+                    {% endfor %}
+                </tr>
                 {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
 
-</div>
-
-<!-- RÉCAPITULATIF -->
-<div class="summary-container">
-    <h3>
-        Récapitulatif du mois :
-        {{ week_start.strftime('%d/%m/%Y') }} →
-        {{ week_end.strftime('%d/%m/%Y') }}
-    </h3>
-
-    {% if week_summary %}
-        {% for d, info in week_summary.items() %}
-            <p>
-                <strong>{{ info.date.strftime('%A %d %B').capitalize() }} :</strong>
-
-                {% for ev in info.events %}
-                    {% if ev.priority.lower() == "urgent" %}
-                        <span style="color:red;font-weight:bold">[URGENT]</span>
-                    {% endif %}
-
-                    {{ ev.time }} — {{ ev.type }} — {{ ev.title }}
-                    ({{ ev.collab }}) —
-                    <em>{{ ev.notes }}</em>
-
-                    {% if not loop.last %} — {% endif %}
-                {% endfor %}
-            </p>
-        {% endfor %}
-    {% else %}
-        <p>Aucun événement enregistré pour ce mois.</p>
-    {% endif %}
-</div>
-
-<!-- 🎯 MODAL FONCTIONNEL — VERSION ORIGINALE -->
-<div id="eventModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-
-        <h2 id="modalTitle">Ajouter / Modifier un événement</h2>
-
-        <form id="eventForm">
-
-            <input type="hidden" id="eventId">
-
-            <label>Date :</label>
-            <input type="date" id="eventDate" required>
-
-            <label>Type :</label>
-            <input type="text" id="eventType" required>
-
-            <label>Titre :</label>
-            <input type="text" id="eventTitle" required>
-
-            <label>Collaborateurs :</label>
-            <input type="text" id="eventCollab">
-
-            <label>Notes :</label>
-            <textarea id="eventNotes"></textarea>
-
-            <label>Priorité :</label>
-            <select id="eventPriority">
-                <option value="normal">Normal</option>
-                <option value="urgent">Urgent</option>
-            </select>
-
-            <button type="submit" class="btn-save">Enregistrer</button>
-
-            <!-- 👇 AJOUT : BOUTON SUPPRIMER -->
-            <button id="deleteEventBtn" type="button" class="btn-delete" style="display:none;">
-                Supprimer l’événement
-            </button>
-
-        </form>
     </div>
-</div>
 
-<!-- JS -->
-<script src="/static/calendar.js"></script>
+    <!-- MONTH SUMMARY -->
+    <div class="summary-container">
+        <h3>Résumé du mois</h3>
+        {% for date_key, ev_list in events_by_date.items() %}
+            {% if ev_list %}
+                <p><strong>{{ date_key }} :</strong></p>
+                {% for ev in ev_list %}
+                    <p>• 
+                        {% if ev.all_day %}
+                            Journée entière — 
+                        {% else %}
+                            {{ ev.time }} — 
+                        {% endif %}
+                        {{ ev.title }} (<em>{{ ev.type }}</em>)
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </div>
 
+    <!-- MODAL -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+
+            <span class="close">&times;</span>
+
+            <h3 id="modalTitle">Nouvel évènement</h3>
+
+            <form id="eventForm">
+
+                <!-- DATE -->
+                <label for="eventDate">Date :</label>
+                <input type="date" id="eventDate" required>
+
+                <!-- HEURE -->
+                <label for="eventTime">Heure :</label>
+                <input type="time" id="eventTime">
+
+                <!-- ALL DAY -->
+                <label style="margin-top:10px;">
+                    <input type="checkbox" id="eventAllDay">
+                    Journée entière
+                </label>
+
+                <!-- TYPE (SELECT) -->
+                <label for="eventType">Type :</label>
+                <select id="eventType">
+                    <option value="rdv">RDV</option>
+                    <option value="reunion">Réunion</option>
+                    <option value="admin">Administratif</option>
+                    <option value="urgence">Urgence</option>
+                    <option value="formation">Formation</option>
+                    <option value="autre">Autre</option>
+                </select>
+
+                <!-- TITLE -->
+                <label for="eventTitle">Titre :</label>
+                <input type="text" id="eventTitle" required>
+
+                <!-- COLLABORATORS -->
+                <label for="eventCollab">Collaborateurs :</label>
+                <input type="text" id="eventCollab">
+
+                <!-- NOTES -->
+                <label for="eventNotes">Notes :</label>
+                <textarea id="eventNotes"></textarea>
+
+                <!-- PRIORITÉ -->
+                <label for="eventPriority">Priorité :</label>
+                <select id="eventPriority">
+                    <option value="basse">Basse</option>
+                    <option value="normale" selected>Normale</option>
+                    <option value="haute">Haute</option>
+                </select>
+
+                <!-- BUTTONS -->
+                <button type="button" class="btn-save" id="saveBtn">💾 Enregistrer</button>
+                <button type="button" class="btn-delete" id="deleteBtn" style="display:none;">🗑 Supprimer</button>
+
+            </form>
+
+        </div>
+    </div>
+
+    <script src="/static/calendar.js"></script>
 </body>
 </html>
