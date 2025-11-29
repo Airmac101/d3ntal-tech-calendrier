@@ -1,4 +1,4 @@
-/* TOPBAR (fixe en haut) */
+/* TOPBAR FIXE */
 .topbar {
     width: 100%;
     height: 55px;
@@ -7,7 +7,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px; /* réduit pour rapprocher les éléments */
+    padding: 0 30px;
     position: fixed;
     top: 0;
     left: 0;
@@ -30,15 +30,115 @@
 .container {
     width: 75%;
     max-width: 1100px;
-    margin: 120px auto 40px auto;  /* descend sous la topbar */
+    margin: 120px auto 40px auto;
     background: white;
     padding: 40px;
     border-radius: 15px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
-/* STYLE DU LOGIN : centre vraiment au milieu */
-.login-container {
-    margin-top: 140px !important; /* réduit pour remonter */
+/* TITRE DU CALENDRIER */
+h1 {
     text-align: center;
+    color: #1a3d8f;
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+    font-size: 20px;
+    margin-bottom: 25px;
+}
+
+/* NAVIGATION MENSUELLE */
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.nav-btn {
+    background: #1a3d8f;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.nav-btn:hover {
+    background: #16357a;
+}
+
+/* TABLEAU CALENDRIER */
+.calendar {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: 15px;
+}
+
+.calendar th {
+    background: #1a3d8f;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+}
+
+.calendar td {
+    border: 1px solid #ddd;
+    padding: 25px 0;
+    height: 70px;
+}
+
+.other-month {
+    color: #aaa;
+}
+
+/* JOUR ACTUEL */
+.today {
+    background: #c7dbff !important;
+    font-weight: bold;
+}
+
+/* LOGIN PAGE */
+.login-container {
+    width: 450px;
+    margin: 160px auto 0;
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+.login-container h1 {
+    margin-bottom: 25px;
+}
+
+input[type="email"] {
+    width: 90%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    font-size: 15px;
+}
+
+button {
+    padding: 10px 25px;
+    background: #1a3d8f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #16357a;
 }
