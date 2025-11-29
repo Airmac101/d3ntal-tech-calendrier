@@ -1,53 +1,32 @@
-/* LOGIN PAGE STYLES */
-.login-wrapper {
-    margin-top: 120px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion sécurisée</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}">
+</head>
+<body>
 
-.login-box {
-    width: 420px;
-    background: white;
-    padding: 40px;
-    text-align: center;
-    border-radius: 15px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-}
+<div class="topbar">
+    <div class="topbar-title">D3NTAL TECH</div>
+</div>
 
-.login-box h1 {
-    margin-bottom: 5px;
-}
+<div class="login-wrapper">
+    <div class="login-box">
 
-.login-box h2 {
-    margin-bottom: 25px;
-    font-size: 18px;
-}
+        <h1>D3NTAL TECH</h1>
+        <h2>Connexion sécurisée</h2>
 
-.login-box form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+        <form method="POST">
+            <input type="email" name="email" placeholder="Email autorisé" required>
+            <button type="submit">Se connecter</button>
+        </form>
 
-.login-box input {
-    height: 40px;
-    border-radius: 6px;
-    border: 1px solid #999;
-    padding: 0 8px;
-}
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+    </div>
+</div>
 
-.login-box button {
-    background: #1a3d8f;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.error {
-    color: red;
-    margin-top: 10px;
-}
+</body>
+</html>
