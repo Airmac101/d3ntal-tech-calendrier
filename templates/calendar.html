@@ -28,11 +28,10 @@
 
         <!-- MESSAGE SUCCÈS -->
         <div id="successMessage" style="display:none;">Succès !</div>
-        <div id="errorMessage" style="display:none;">Erreur !</div>
 
         <!-- BOUTON AJOUT -->
         <div style="margin-top: 20px; text-align: right;">
-            <a href="#" id="openModalBtn" class="nav-btn" style="background:#0a7cff;font-size:15px;">
+            <a href="#" id="openModalBtn" class="nav-btn add-btn">
                 + Ajouter un événement
             </a>
         </div>
@@ -54,39 +53,35 @@
                 {% for day in week %}
                 {% set is_other = (day.month != month) %}
                 {% set is_today = (day == current_day) %}
-                {% set day_key = day.isoformat() %}
-                {% set day_events = events_by_date.get(day_key, []) %}
+                {% set d = day.day %}
+                {% set events = events_by_day.get(d, []) %}
 
-                <td class="
-                    {% if is_other %}other-month{% endif %}
-                    {% if is_today %} today{% endif %}
-                ">
+                <td class="{% if is_other %}other-month{% endif %}{% if is_today %} today{% endif %}">
+
                     <div class="day-number">{{ day.day }}</div>
 
-                    {% for ev in day_events %}
+                    {% for e in events %}
+                        {% set type_clean = e.event_type.lower().replace(' ', '').replace('é','e').replace('è','e').replace('ê','e') %}
+                        <div class="event-badge event-type-{{ type_clean }}"
+                             data-event-id="{{ e.id }}"
+                             data-event-title="{{ e.title }}"
+                             data-event-date="{{ e.event_date }}"
+                             data-event-time="{{ e.event_time }}"
+                             data-event-type="{{ e.event_type }}"
+                             data-event-collaborators="{{ e.collaborators }}">
+                            
+                            <div class="event-line">
+                                <span class="event-time">{{ e.event_time }}</span>
+                                <span class="event-title">{{ e.title }}</span>
+                            </div>
 
-                    {% set type_clean = ev.type.lower().replace(' ', '').replace('é','e').replace('è','e').replace('ê','e') %}
-
-                    <div class="event-badge event-type-{{ type_clean }}"
-                         data-event-id="{{ ev.id }}"
-                         data-event-title="{{ ev.title }}"
-                         data-event-date="{{ day_key }}"
-                         data-event-time="{{ ev.time }}"
-                         data-event-type="{{ ev.type }}"
-                         data-event-collaborators="{{ ev.raw_collaborators }}">
-                         
-                        <div class="event-line">
-                            <span class="event-time">{{ ev.time }}</span>
-                            <span class="event-title">{{ ev.title }}</span>
+                            <div class="event-meta">
+                                {{ e.event_type }}
+                                {% if e.collaborators %}
+                                    — {{ e.collaborators }}
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="event-meta">
-                            {{ ev.type }}
-                            {% if ev.collaborators %}
-                                — {{ ev.collaborators }}
-                            {% endif %}
-                        </div>
-
-                    </div>
                     {% endfor %}
                 </td>
                 {% endfor %}
@@ -119,9 +114,9 @@
                 <option value="Autre">Autre</option>
             </select>
 
-            <input id="eventTypeCustom" type="text" placeholder="Précisez le type d’événement (Autre)" style="display:none;">
+            <input id="eventTypeCustom" type="text" placeholder="Précisez le type (Autre)" style="display:none;">
 
-            <div style="font-weight:bold;margin-top:14px;">Collaborateurs :</div>
+            <div class="collab-title">Collaborateurs :</div>
             <div class="collab-group">
                 <label><input type="checkbox" class="collab-checkbox" value="Denis"> Denis</label>
                 <label><input type="checkbox" class="collab-checkbox" value="Isis"> Isis</label>
@@ -129,22 +124,20 @@
                 <label><input type="checkbox" class="collab-checkbox" id="collabOtherCheckbox" value="__AUTRE__"> Autre</label>
             </div>
 
-            <input id="eventCollaboratorsOther" type="text" placeholder="Autre collaborateur (nom ou email)" style="display:none;">
+            <input id="eventCollaboratorsOther" type="text" placeholder="Autre collaborateur" style="display:none;">
 
             <button id="saveEventBtn">Enregistrer</button>
-            <button id="deleteEventBtn" style="display:none;background:#c62828;">Supprimer</button>
+            <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
 
         </div>
     </div>
 
     <!-- SCRIPT JS -->
     <script>
+
         const modalOverlay = document.getElementById("modalOverlay");
         const openModalBtn = document.getElementById("openModalBtn");
         const closeModalBtn = document.getElementById("closeModalBtn");
-
-        const saveBtn = document.getElementById("saveEventBtn");
-        const deleteBtn = document.getElementById("deleteEventBtn");
 
         const titleInput = document.getElementById("eventTitle");
         const dateInput = document.getElementById("eventDate");
@@ -155,76 +148,79 @@
         const collabOtherCheckbox = document.getElementById("collabOtherCheckbox");
         const collabOtherInput = document.getElementById("eventCollaboratorsOther");
 
+        const saveBtn = document.getElementById("saveEventBtn");
+        const deleteBtn = document.getElementById("deleteEventBtn");
+
         let editingEventId = null;
 
-        /* =============================================
-           SHOW PICKER AUTO (DATE & HEURE)
-           ============================================= */
-        dateInput.addEventListener("click", () => dateInput.showPicker());
-        timeInput.addEventListener("click", () => timeInput.showPicker());
+        // XL : show picker on click
+        dateInput.addEventListener("click", () => dateInput.showPicker && dateInput.showPicker());
+        timeInput.addEventListener("click", () => timeInput.showPicker && timeInput.showPicker());
 
-        /* =============================================
-           OUVERTURE MODALE (AJOUT)
-           ============================================= */
-        openModalBtn.onclick = () => {
+        // RESET FORM
+        function resetModal() {
             editingEventId = null;
-            modalOverlay.style.display = "flex";
-
             titleInput.value = "";
             dateInput.value = "";
             timeInput.value = "";
             typeSelect.value = "Rendez-vous patient";
             typeCustomInput.style.display = "none";
-
-            collabOtherInput.style.display = "none";
-            collabOtherCheckbox.checked = false;
+            typeCustomInput.value = "";
 
             document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
+            collabOtherCheckbox.checked = false;
 
             deleteBtn.style.display = "none";
+            document.getElementById("modalTitle").innerText = "Ajouter un événement";
+        }
+
+        // OPEN MODAL
+        openModalBtn.onclick = (e) => {
+            e.preventDefault();
+            resetModal();
+            modalOverlay.style.display = "flex";
         };
 
-        /* =============================================
-           GESTION TYPE "AUTRE"
-           ============================================= */
+        closeModalBtn.onclick = () => modalOverlay.style.display = "none";
+
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) modalOverlay.style.display = "none";
+        };
+
+        // TYPE AUTRE
         typeSelect.onchange = () => {
-            if (typeSelect.value === "Autre") {
-                typeCustomInput.style.display = "block";
-            } else {
-                typeCustomInput.style.display = "none";
-                typeCustomInput.value = "";
-            }
+            typeCustomInput.style.display = (typeSelect.value === "Autre") ? "block" : "none";
         };
 
-        /* =============================================
-           GESTION COLLABORATEUR AUTRE
-           ============================================= */
+        // COLLAB AUTRE
         collabOtherCheckbox.onchange = () => {
-            collabOtherInput.style.display =
-                collabOtherCheckbox.checked ? "block" : "none";
+            collabOtherInput.style.display = collabOtherCheckbox.checked ? "block" : "none";
         };
 
-        /* =============================================
-           OUVERTURE MODALE (ÉDITION)
-           ============================================= */
+        // EVENTS CLICK = EDIT
         document.querySelectorAll(".event-badge").forEach(badge => {
             badge.onclick = () => {
+
                 editingEventId = badge.dataset.eventId;
 
-                modalOverlay.style.display = "flex";
-
                 document.getElementById("modalTitle").innerText = "Modifier l’événement";
+                deleteBtn.style.display = "block";
+
+                modalOverlay.style.display = "flex";
 
                 titleInput.value = badge.dataset.eventTitle;
                 dateInput.value = badge.dataset.eventDate;
                 timeInput.value = badge.dataset.eventTime;
 
-                const type = badge.dataset.eventType;
-                const known = ["Rendez-vous patient", "Réunion interne", "Administration", "Urgence cabinet", "Formation"];
+                let type = badge.dataset.eventType;
+                const types_known = ["Rendez-vous patient","Réunion interne","Administration","Urgence cabinet","Formation"];
 
-                if (known.includes(type)) {
+                if (types_known.includes(type)) {
                     typeSelect.value = type;
                     typeCustomInput.style.display = "none";
+                    typeCustomInput.value = "";
                 } else {
                     typeSelect.value = "Autre";
                     typeCustomInput.style.display = "block";
@@ -233,59 +229,36 @@
 
                 document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
 
-                const collaborators = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
-
+                let raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
                 let others = [];
 
-                collaborators.forEach(val => {
-                    if (["denis", "denis meuret"].includes(val.toLowerCase())) {
-                        document.querySelector('input[value="Denis"]').checked = true;
-                    } else if (val.toLowerCase().includes("isis")) {
-                        document.querySelector('input[value="Isis"]').checked = true;
-                    } else if (val.toLowerCase().includes("assist")) {
-                        document.querySelector('input[value="Assistante"]').checked = true;
-                    } else {
-                        others.push(val);
-                    }
+                raw.forEach(c => {
+                    const lower = c.toLowerCase();
+                    if (lower.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
+                    else if (lower.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
+                    else if (lower.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
+                    else others.push(c);
                 });
 
                 if (others.length > 0) {
                     collabOtherCheckbox.checked = true;
                     collabOtherInput.style.display = "block";
                     collabOtherInput.value = others.join(", ");
-                } else {
-                    collabOtherCheckbox.checked = false;
-                    collabOtherInput.style.display = "none";
-                    collabOtherInput.value = "";
                 }
-
-                deleteBtn.style.display = "block";
             };
         });
 
-        /* =============================================
-           FERMETURE MODALE
-           ============================================= */
-        closeModalBtn.onclick = () => modalOverlay.style.display = "none";
-        modalOverlay.onclick = e => {
-            if (e.target === modalOverlay) modalOverlay.style.display = "none";
-        };
-
-        /* =============================================
-           SAUVEGARDE (AJOUT / MODIFICATION)
-           ============================================= */
+        // SAVE
         saveBtn.onclick = async () => {
 
             let collaborators = [];
 
             document.querySelectorAll(".collab-checkbox").forEach(cb => {
-                if (cb.checked && cb.value !== "__AUTRE__") {
-                    collaborators.push(cb.value);
-                }
+                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
             });
 
-            if (collabOtherCheckbox.checked) {
-                collaborators.push(collabOtherInput.value);
+            if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
+                collaborators.push(collabOtherInput.value.trim());
             }
 
             let eventType = typeSelect.value;
@@ -293,7 +266,7 @@
                 eventType = typeCustomInput.value.trim();
             }
 
-            const payload = {
+            let payload = {
                 title: titleInput.value.trim(),
                 event_date: dateInput.value,
                 event_time: timeInput.value,
@@ -301,12 +274,13 @@
                 collaborators: collaborators.join(",")
             };
 
-            if (!payload.title || !payload.event_date || !payload.event_time || !payload.event_type) {
+            if (!payload.title || !payload.event_date || !payload.event_time) {
                 alert("Veuillez remplir tous les champs.");
                 return;
             }
 
             let url = "/api/add_event";
+
             if (editingEventId) {
                 payload.event_id = editingEventId;
                 url = "/api/update_event";
@@ -323,19 +297,20 @@
             if (data.status === "success") {
                 window.location.reload();
             } else {
-                alert("Erreur : " + data.message);
+                alert("Erreur : " + (data.message || "inconnue"));
             }
         };
 
-        /* =============================================
-           SUPPRESSION
-           ============================================= */
+        // DELETE
         deleteBtn.onclick = async () => {
+
+            if (!editingEventId) return;
+
             if (!confirm("Supprimer cet événement ?")) return;
 
             const res = await fetch("/api/delete_event", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ event_id: editingEventId })
             });
 
@@ -344,9 +319,10 @@
             if (data.status === "success") {
                 window.location.reload();
             } else {
-                alert("Erreur !");
+                alert("Erreur lors de la suppression.");
             }
         };
+
     </script>
 
 </body>
