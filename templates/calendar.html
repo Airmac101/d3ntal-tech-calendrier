@@ -24,11 +24,11 @@
             ← Mois précédent
         </a>
 
-        <!-- Titre du mois + bouton PDF (au centre) -->
+        <!-- Titre du mois + bouton PDF -->
         <div class="month-title-wrapper">
             <h2 class="month-title">{{ month_name }} {{ year }}</h2>
 
-            <!-- BOUTON PDF -->
+            <!-- EXPORT PDF -->
             <a href="/export_pdf" class="btn-export-inline">📄 Export PDF</a>
         </div>
 
@@ -60,13 +60,16 @@
         {% for week in calendar_days %}
             <tr>
                 {% for d in week %}
-                    <td class="day-cell {% if d == current_day %}today{% endif %}" data-date="{{ d }}">
+                    <td class="day-cell {% if d == current_day %}today{% endif %}"
+                        data-date="{{ d }}">
+
                         <div class="day-number">{{ d.day }}</div>
 
                         {% if events_by_date[d.isoformat()] %}
                             <div class="events-container">
                                 {% for ev in events_by_date[d.isoformat()] %}
-                                    <div class="event-item {{ ev.css_class }}" data-event-id="{{ ev.id }}">
+                                    <div class="event-item {{ ev.css_class }}"
+                                         data-event-id="{{ ev.id }}">
                                         <strong>{{ ev.title }}</strong><br>
                                         <span>{{ ev.type }}</span><br>
                                         <small>— {{ ev.collaborators }}</small>
@@ -114,7 +117,7 @@
     {% endif %}
 </div>
 
-<!-- 🎯 MODAL RESTAURÉ (INDISPENSABLE POUR AJOUT + EDIT) -->
+<!-- 🎯 MODAL FONCTIONNEL — VERSION ORIGINALE -->
 <div id="eventModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
@@ -122,6 +125,7 @@
         <h2 id="modalTitle">Ajouter / Modifier un événement</h2>
 
         <form id="eventForm">
+
             <input type="hidden" id="eventId">
 
             <label>Date :</label>
@@ -146,6 +150,12 @@
             </select>
 
             <button type="submit" class="btn-save">Enregistrer</button>
+
+            <!-- 👇 AJOUT : BOUTON SUPPRIMER -->
+            <button id="deleteEventBtn" type="button" class="btn-delete" style="display:none;">
+                Supprimer l’événement
+            </button>
+
         </form>
     </div>
 </div>
