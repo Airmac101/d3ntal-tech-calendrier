@@ -311,4 +311,61 @@
         saveBtn.onclick = async () => {
             let collaborators = [];
             document.querySelectorAll(".collab-checkbox").forEach(cb => {
-                if (cb.checked && cb.value !== "__AUTRE__") collaborators.pus
+                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
+            });
+            if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
+                collaborators.push(collabOtherInput.value.trim());
+            }
+
+            let eventType = typeSelect.value;
+            if (eventType === "Autre") eventType = typeCustomInput.value.trim();
+
+            const payload = {
+                title: titleInput.value.trim(),
+                event_date: dateInput.value,
+                event_time: timeInput.value,
+                event_type: eventType,
+                collaborators: collaborators.join(", "),
+                priority: prioritySelect.value,
+                notes: notesInput.value.trim()
+            };
+
+            if (editingEventId) payload.event_id = editingEventId;
+
+            const url = editingEventId ? "/api/update_event" : "/api/add_event";
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de l’enregistrement.");
+            }
+        };
+
+        deleteBtn.onclick = async () => {
+            if (!editingEventId) return;
+            if (!confirm("Supprimer cet événement ?")) return;
+
+            const res = await fetch("/api/delete_event", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ event_id: editingEventId })
+            });
+
+            const data = await res.json();
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        };
+    </script>
+
+</body>
+</html>
