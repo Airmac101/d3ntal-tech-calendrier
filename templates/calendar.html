@@ -84,9 +84,9 @@
             {% endfor %}
         </table>
 
-        <!-- RÉCAPITULATIF HEBDOMADAIRE -->
+        <!-- RÉCAP HEBDOMADAIRE -->
         <div class="weekly-summary-box">
-            <h3>Récapitulatif de la semaine : 
+            <h3>Récapitulatif de la semaine :
                 {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}
             </h3>
 
@@ -134,11 +134,11 @@
             <!-- TITRE -->
             <input id="eventTitle" type="text" placeholder="Titre de l’événement">
 
-            <!-- DATE -->
-            <input id="eventDate" type="date" style="pointer-events: auto;">
+            <!-- DATE — version native, aucune icône, 100% cliquable -->
+            <input id="eventDate" type="date">
 
-            <!-- HEURE -->
-            <input id="eventTime" type="time" style="pointer-events: auto;">
+            <!-- HEURE — version native, aucune icône, 100% cliquable -->
+            <input id="eventTime" type="time">
 
             <!-- TYPE -->
             <select id="eventType">
@@ -274,10 +274,10 @@
                 ];
                 if (known.includes(type)) {
                     typeSelect.value = type;
-                    typeCustomInput.style.display = "none";
+                    typeSelect.dispatchEvent(new Event("change"));
                 } else {
                     typeSelect.value = "Autre";
-                    typeCustomInput.style.display = "block";
+                    typeSelect.dispatchEvent(new Event("change"));
                     typeCustomInput.value = type;
                 }
 
