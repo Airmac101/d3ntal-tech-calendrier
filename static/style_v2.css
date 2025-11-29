@@ -1,145 +1,170 @@
-/* ================================
-   STYLE GLOBAL D3NTAL TECH
-   ================================ */
-
-body {
+/* GLOBAL */
+body, html {
     margin: 0;
+    padding: 0;
     font-family: Arial, sans-serif;
-    background: #eef2f9;
+    background: #f0f4ff;
 }
 
 /* TOPBAR */
 .topbar {
-    background: #123c92;
-    padding: 12px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    width: 100%;
+    height: 70px;
+    background: #1a3d8f;
     color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .topbar-title {
-    font-size: 20px;
+    font-size: 26px;
     font-weight: bold;
 }
 
 .topbar-logout {
+    margin-left: 15px;
     color: white;
-    text-decoration: none;
     font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
 }
 
 /* CONTAINER */
 .container {
-    width: 90%;
-    margin: 30px auto;
+    width: 85%;
+    max-width: 1200px;
     background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    margin: 130px auto 40px auto;
+    padding: 45px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
-/* CALENDAR NAVIGATION */
+/* NAVIGATION */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.nav-btn {
-    background: #123c92;
-    color: white;
-    padding: 8px 18px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: bold;
+.calendar-nav h2 {
+    font-size: 28px;
+    margin: 0;
 }
 
-/* CALENDAR TABLE */
+.nav-btn {
+    background: #1a3d8f;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 17px;
+}
+
+.add-btn {
+    font-size: 18px !important;
+}
+
+.nav-btn:hover {
+    background: #16326e;
+}
+
+/* TABLE CALENDRIER */
 .calendar {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 25px;
 }
 
 .calendar th {
-    background: #123c92;
+    background: #1a3d8f;
     color: white;
-    padding: 10px;
+    padding: 14px;
+    border: 1px solid #ccc;
+    font-size: 17px;
 }
 
 .calendar td {
+    height: 135px;
     border: 1px solid #ccc;
-    height: 110px;
+    text-align: left;
+    font-size: 16px;
+    padding: 10px;
     vertical-align: top;
-    padding: 5px;
     position: relative;
 }
 
-/* OUTSIDE MONTH */
 .other-month {
-    background: #f4f4f4;
-    color: #999;
+    background: #e8ecf7;
+    color: #777;
 }
 
-/* TODAY */
 .today {
-    background: #e3edff !important;
+    background: #bcd3ff;
+    border: 2px solid #1a3d8f;
 }
 
-/* DAY NUMBER */
+/* JOUR */
 .day-number {
     font-weight: bold;
-    color: #333;
+    margin-bottom: 10px;
+    font-size: 18px;
 }
 
-/* EVENT BADGES */
+/* EVENEMENTS */
 .event-badge {
-    margin-top: 5px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: 13px;
+    background: #eef3ff;
+    border-left: 4px solid #1a3d8f;
+    border-radius: 10px;
+    padding: 12px 12px;
+    margin-top: 8px;
+    font-size: 16px;
     cursor: pointer;
-    font-weight: bold;
-    color: white !important;
-    opacity: 0.95;
 }
 
-/* COULEURS PAR TYPE (palette moderne) */
-.event-type-rdv {
-    background: #1565c0 !important;  /* bleu royal */
-}
-
-.event-type-reunion {
-    background: #2e7d32 !important; /* vert foncé */
-}
-
-.event-type-admin {
-    background: #ef6c00 !important; /* orange */
-}
-
-.event-type-urgence {
-    background: #c62828 !important; /* rouge */
-}
-
-.event-type-formation {
-    background: #6a1b9a !important; /* violet */
-}
-
-.event-type-autre {
-    background: #7e7e7e !important; /* gris */
-}
-
-/* TEXTE DES EVENT-BADGES */
 .event-line {
-    font-size: 13px;
-    color: white !important;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 17px;
+    font-weight: bold;
 }
 
 .event-meta {
-    font-size: 11px;
-    opacity: 0.90;
-    color: white !important;
+    font-size: 15px;
+    color: #333;
+    margin-top: 4px;
+}
+
+/* LOGIN */
+.login-wrapper {
+    margin-top: 160px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.login-box {
+    width: 460px;
+    background: white;
+    padding: 45px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.login-box h1 {
+    margin-bottom: 5px;
+    font-size: 28px;
+}
+
+.login-box h2 {
+    font-size: 20px;
+    margin-bottom: 28px;
 }
 
 /* MODALE */
@@ -149,7 +174,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0,0,0,0.6);
     display: none;
     justify-content: center;
     align-items: center;
@@ -158,102 +183,69 @@ body {
 
 .modal-box {
     background: white;
-    width: 480px;
-    max-width: 95%;
-    padding: 25px;
-    border-radius: 12px;
+    width: 540px;
+    padding: 30px;
+    border-radius: 16px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    text-align: left;
-    animation: fadeIn 0.2s ease-in-out;
 }
 
 .modal-box h3 {
-    margin-top: 0;
     text-align: center;
-    color: #123c92;
+    font-size: 24px;
+    margin-top: 0;
+    color: #1a3d8f;
 }
 
 .modal-box input,
 .modal-box select {
     width: 100%;
-    padding: 10px;
-    margin-top: 12px;
-    border: 1px solid #aaa;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 16px;
+    margin-top: 16px;
+    border: 1px solid #888;
+    border-radius: 10px;
+    font-size: 17px;
 }
 
-.modal-box button {
+.collab-title {
     margin-top: 18px;
-    width: 100%;
-    padding: 12px;
-    background: #123c92;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
 }
 
-#deleteEventBtn {
-    background: #c62828 !important;
-}
-
-/* LOGIN PAGE */
-.login-wrapper {
-    width: 100%;
-    height: 100vh;
+.collab-group {
+    margin-top: 12px;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    font-size: 17px;
 }
 
-.login-box {
-    background: white;
-    padding: 40px 35px;
-    border-radius: 12px;
-    width: 420px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    text-align: center;
+.collab-group input {
+    width: 20px;
+    height: 20px;
 }
 
-.login-box h1 {
-    margin-top: 0;
-    color: #123c92;
-}
-
-.login-box input {
+/* BOUTONS MODALE */
+.modal-box button {
+    margin-top: 22px;
     width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 15px;
-}
-
-.login-box button {
-    width: 100%;
-    margin-top: 18px;
-    padding: 12px;
-    background: #123c92;
-    border: none;
+    padding: 16px;
+    background: #1a3d8f;
     color: white;
-    font-size: 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 19px;
     font-weight: bold;
-    border-radius: 6px;
     cursor: pointer;
 }
 
-.error {
-    margin-top: 12px;
-    background: #ffd2d2;
-    padding: 10px;
-    color: #a11;
-    border-radius: 6px;
+.delete-btn {
+    background: #c62828 !important;
 }
 
-/* ANIMATION */
-@keyframes fadeIn {
-    from { transform: scale(0.85); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+.close-btn {
+    position: absolute;
+    right: 25px;
+    font-size: 34px;
+    cursor: pointer;
 }
