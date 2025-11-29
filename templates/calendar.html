@@ -1,488 +1,572 @@
-from flask import (
-    Flask,
-    render_template,
-    request,
-    redirect,
-    session,
-    jsonify,
-)
-import sqlite3
-import os
-import calendar
-from datetime import datetime, date, timedelta
-import hashlib
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>D3NTAL TECH - Calendrier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}">
+</head>
 
-# ------------------------------------------------
-# CONFIG FLASK
-# ------------------------------------------------
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "SUPER_SECRET_KEY_D3NTAL_TECH_2025")
+<body>
 
-# IMPORTANT : base PERSISTANTE sur Render
-DB_PATH = "/var/data/database.db"
-SALT = "D3NTAL_TECH_SUPER_SALT_2025"
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="topbar-title">D3NTAL TECH</div>
+        <a class="topbar-logout" href="/logout">Déconnexion</a>
+    </div>
 
+    <!-- CONTAINER -->
+    <div class="container">
 
-# ------------------------------------------------
-# EMAIL — UTILITAIRE GLOBAL
-# ------------------------------------------------
-def send_event_email(subject: str, html_content: str):
-    smtp_server = os.environ.get("SMTP_SERVER")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_password = os.environ.get("SMTP_PASSWORD")
+        <!-- NAVIGATION CALENDRIER -->
+        <div class="calendar-nav">
+            <a class="nav-btn" href="/calendar?year={{ prev_year }}&month={{ prev_month }}">← Mois précédent</a>
 
-    recipients = [
-        "denismeuret@d3ntal-tech.fr",
-        "isis.stouvenel@d3ntal-tech.fr",
-    ]
+            <h2>{{ month_name }} {{ year }}</h2>
 
-    if not smtp_server or not smtp_user or not smtp_password:
-        print("EMAIL WARNING: SMTP configuration incomplete, email not sent.")
-        return
+            <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
+        </div>
 
-    msg = MIMEMultipart("alternative")
-    msg["From"] = smtp_user
-    msg["To"] = ", ".join(recipients)
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html_content, "html"))
+        <!-- BOUTON AJOUT -->
+        <div class="add-wrapper">
+            <a href="#" id="openModalBtn" class="nav-btn add-btn">
+                + Ajouter un événement
+            </a>
+        </div>
 
-    try:
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.sendmail(smtp_user, recipients, msg.as_string())
-        server.quit()
-        print("EMAIL sent successfully.")
-    except Exception as e:
-        print("EMAIL ERROR:", e)
-
-
-# ------------------------------------------------
-# EMAIL — TEMPLATE HTML NOTION-LIKE
-# ------------------------------------------------
-def build_event_email(
-    action: str,
-    title: str,
-    event_date: str,
-    event_time: str,
-    event_type: str,
-    collaborators: str,
-    priority: str,
-    notes: str,
-    user_email: str,
-) -> str:
-
-    collaborators = collaborators or ""
-    notes = notes or ""
-    priority = priority or "Normal"
-    event_time = event_time or ""
-
-    html = f"""
-    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7;">
-        <h2 style="color:#2F80ED; margin-bottom: 10px;">{action} — D3NTAL TECH</h2>
-        <p style="color:#555; margin-top:0; margin-bottom: 20px;">
-            Un événement a été enregistré dans le calendrier D3NTAL TECH.
-        </p>
-
-        <table style="border-collapse: collapse; width: 100%; background-color:#fff;">
+        <!-- TABLE CALENDRIER -->
+        <table class="calendar">
             <tr>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #e0e0e0; background-color:#fafafa;">Champ</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #e0e0e0; background-color:#fafafa;">Valeur</th>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+                <th>Dimanche</th>
             </tr>
-            <tr><td style="padding:8px;">Titre</td><td style="padding:8px;">{title}</td></tr>
-            <tr><td style="padding:8px;">Date</td><td style="padding:8px;">{event_date}</td></tr>
-            <tr><td style="padding:8px;">Heure</td><td style="padding:8px;">{event_time}</td></tr>
-            <tr><td style="padding:8px;">Type</td><td style="padding:8px;">{event_type}</td></tr>
-            <tr><td style="padding:8px;">Collaborateurs</td><td style="padding:8px;">{collaborators}</td></tr>
-            <tr><td style="padding:8px;">Priorité</td><td style="padding:8px;">{priority}</td></tr>
-            <tr><td style="padding:8px;">Notes</td><td style="padding:8px; white-space:pre-wrap;">{notes}</td></tr>
-            <tr><td style="padding:8px;">Créé / Modifié par</td><td style="padding:8px;">{user_email}</td></tr>
+
+            {% for week in calendar_days %}
+            <tr>
+                {% for day in week %}
+                {% set is_other = (day.month != month) %}
+                {% set is_today = (day == current_day) %}
+                {% set day_key = day.isoformat() %}
+                {% set day_events = events_by_date.get(day_key, []) %}
+
+                <td class="calendar-day{% if is_other %} other-month{% endif %}{% if is_today %} today{% endif %}"
+                    data-date="{{ day_key }}">
+                    <div class="day-number">{{ day.day }}</div>
+
+                    {% for ev in day_events %}
+                        {% set display_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
+                    <div class="event-badge event-type-{{ ev.css_class }}"
+                         data-event-id="{{ ev.id }}"
+                         data-event-title="{{ ev.title }}"
+                         data-event-date="{{ ev.date }}"
+                         data-event-time="{{ ev.time }}"
+                         data-event-type="{{ ev.type }}"
+                         data-event-priority="{{ ev.priority }}"
+                         data-event-notes="{{ ev.notes }}"
+                         data-event-collaborators="{{ ev.collaborators }}">
+                        <div class="event-line">
+                            <span class="event-time">{{ display_time }}</span>
+                            <span class="event-title">{{ ev.title }}</span>
+                        </div>
+                        <div class="event-meta">
+                            {{ ev.type }}
+                            {% if ev.collaborators %}
+                                — {{ ev.collaborators }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
         </table>
 
-        <p style="font-size:12px; color:#999; margin-top:20px;">
-            Notification automatique D3NTAL TECH — Merci de ne pas répondre à cet e-mail.
-        </p>
+        <!-- RÉCAPITULATIF DU MOIS -->
+        <div class="weekly-summary-box">
+            <h3>Récapitulatif du mois :
+                {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}
+            </h3>
+
+            <div class="weekly-summary-list">
+                {% if week_summary|length == 0 %}
+                    <div class="week-line">
+                        <span class="week-none">Aucun événement enregistré pour ce mois en cours.</span>
+                    </div>
+                {% else %}
+                    {% for day_key, d in week_summary.items()|sort(attribute='1.date') %}
+                        <div class="week-line">
+                            <span class="week-day">
+                                {{ d.date.strftime('%A %d %B').capitalize() }} :
+                            </span>
+
+                            {% if d.events|length == 0 %}
+                                <span class="week-none">—</span>
+                            {% else %}
+                                {% for ev in d.events %}
+                                    {% set label_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
+                                    <span class="week-event">
+                                        <span class="priority priority-{{ ev.priority|lower }}">
+                                            [{{ ev.priority|upper }}]
+                                        </span>
+                                        {{ label_time }} — {{ ev.type }} — {{ ev.title }}
+                                        {% if ev.collab %}
+                                            ({{ ev.collab }})
+                                        {% endif %}
+                                        {% if ev.notes %}
+                                            — <em>{{ ev.notes }}</em>
+                                        {% endif %}
+                                    </span>
+                                    {% if not loop.last %} | {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
     </div>
-    """
-    return html
+    <!-- MODALE AJOUT / EDIT -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box" id="modalBox">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h3 id="modalTitle">Ajouter un événement</h3>
 
+            <div id="errorMessageModal" class="error" style="display:none;"></div>
 
-# ------------------------------------------------
-# UTILS DB & HASH
-# ------------------------------------------------
-def hash_password(plain_password: str) -> str:
-    to_hash = (SALT + plain_password).encode("utf-8")
-    return hashlib.sha256(to_hash).hexdigest()
+            <!-- TITRE -->
+            <input id="eventTitle" type="text" placeholder="Titre de l’événement">
 
+            <!-- DATE -->
+            <input id="eventDate" type="date">
 
-def get_db_connection():
-    os.makedirs("/var/data", exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+            <!-- HEURE -->
+            <input id="eventTime" type="time">
 
+            <!-- JOURNÉE ENTIÈRE -->
+            <label style="margin-top:8px; display:block;">
+                <input type="checkbox" id="allDayCheckbox">
+                Journée entière (sans préciser d’heure)
+            </label>
 
-def force_init_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
+            <!-- TYPE -->
+            <select id="eventType">
+                <option value="Rendez-vous Client">Rendez-vous Client</option>
+                <option value="Rendez-vous Fournisseur">Rendez-vous Fournisseur</option>
+                <option value="Réunion interne">Réunion interne</option>
+                <option value="Administration">Administration</option>
+                <option value="Urgence cabinet">Urgence cabinet</option>
+                <option value="Formation">Formation</option>
+                <option value="Autre">Autre</option>
+            </select>
 
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS authorized_users (
-            email TEXT PRIMARY KEY,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+            <input id="eventTypeCustom" type="text" placeholder="Précisez le type (Autre)" style="display:none;">
 
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_email TEXT NOT NULL,
-            title TEXT NOT NULL,
-            event_date TEXT NOT NULL,
-            event_time TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            collaborators TEXT,
-            priority TEXT DEFAULT 'Normal',
-            notes TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+            <!-- COLLABORATEURS -->
+            <div class="collab-title">Collaborateurs :</div>
+            <div class="collab-group">
+                <label><input type="checkbox" class="collab-checkbox" value="Denis"> Denis</label>
+                <label><input type="checkbox" class="collab-checkbox" value="Isis"> Isis</label>
+                <label><input type="checkbox" class="collab-checkbox" value="Assistante"> Assistante</label>
+                <label><input type="checkbox" class="collab-checkbox" id="collabOtherCheckbox" value="__AUTRE__"> Autre</label>
+            </div>
 
-    # Ajout colonnes si absentes
-    try: cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
-    except: pass
-    try: cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
-    except: pass
+            <input id="eventCollaboratorsOther" type="text" placeholder="Autre collaborateur" style="display:none;">
 
-    # Comptes autorisés
-    pwd = hash_password("D3ntalTech!@2025")
-    for email in [
-        "denismeuret01@gmail.com",
-        "isis.stouvenel@d3ntal-tech.fr",
-        "isis.42420@gmail.com",
-        "denismeuret@d3ntal-tech.fr",
-    ]:
-        cur.execute(
-            "INSERT OR REPLACE INTO authorized_users (email,password_hash) VALUES (?,?);",
-            (email, pwd),
-        )
+            <!-- PRIORITÉ -->
+            <select id="eventPriority">
+                <option value="Normal" selected>Normal</option>
+                <option value="Urgent">Urgent</option>
+                <option value="Important">Important</option>
+                <option value="Critique">Critique</option>
+            </select>
 
-    conn.commit()
-    conn.close()
+            <!-- NOTES -->
+            <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..."
+                class="notes-textarea"></textarea>
 
+            <button id="saveEventBtn">Enregistrer</button>
+            <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
+        </div>
+    </div>
 
-def check_credentials(email: str, password: str) -> bool:
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT password_hash FROM authorized_users WHERE email=?", (email,))
-    row = cur.fetchone()
-    conn.close()
-    return row and row["password_hash"] == hash_password(password)
+    <!-- MENU CONTEXTUEL JOUR -->
+    <div id="dayContextMenu" class="context-menu" style="display:none;"></div>
 
+    <!-- SCRIPT -->
+    <script>
+        const modalOverlay = document.getElementById("modalOverlay");
+        const modalBox = document.getElementById("modalBox");
+        const openModalBtn = document.getElementById("openModalBtn");
+        const closeModalBtn = document.getElementById("closeModalBtn");
 
-def event_type_to_css(event_type: str) -> str:
-    t = (event_type or "").lower()
-    if "rendez" in t: return "rdv"
-    if "fournisseur" in t: return "rdv"
-    if "réunion" in t or "reunion" in t: return "reunion"
-    if "admin" in t: return "admin"
-    if "urgence" in t: return "urgence"
-    if "forma" in t: return "formation"
-    return "autre"
+        const titleInput = document.getElementById("eventTitle");
+        const dateInput = document.getElementById("eventDate");
+        const timeInput = document.getElementById("eventTime");
+        const allDayCheckbox = document.getElementById("allDayCheckbox");
 
+        const typeSelect = document.getElementById("eventType");
+        const typeCustomInput = document.getElementById("eventTypeCustom");
+        const prioritySelect = document.getElementById("eventPriority");
+        const notesInput = document.getElementById("eventNotes");
 
-# ------------------------------------------------
-# LOGIN
-# ------------------------------------------------
-@app.route("/", methods=["GET", "POST"])
-def login():
-    error = None
-    if request.method == "POST":
-        email = (request.form.get("email") or "").strip()
-        password = request.form.get("password") or ""
-        if check_credentials(email, password):
-            session["user"] = email
-            return redirect("/calendar")
-        else:
-            error = "Email ou mot de passe incorrect."
-    return render_template("login.html", error=error)
+        const collabOtherCheckbox = document.getElementById("collabOtherCheckbox");
+        const collabOtherInput = document.getElementById("eventCollaboratorsOther");
 
+        const saveBtn = document.getElementById("saveEventBtn");
+        const deleteBtn = document.getElementById("deleteEventBtn");
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
+        const contextMenu = document.getElementById("dayContextMenu");
 
+        let editingEventId = null;
 
-# ------------------------------------------------
-# CALENDRIER
-# ------------------------------------------------
-@app.route("/calendar")
-def calendar_page():
-    if "user" not in session:
-        return redirect("/")
+        /* Forcer le picker natif */
+        if (dateInput && dateInput.showPicker) {
+            dateInput.addEventListener("click", () => dateInput.showPicker());
+        }
+        if (timeInput && timeInput.showPicker) {
+            timeInput.addEventListener("click", () => {
+                if (!allDayCheckbox.checked) timeInput.showPicker();
+            });
+        }
 
-    now = datetime.now()
-    today = date.today()
-
-    year = int(request.args.get("year", now.year))
-    month = int(request.args.get("month", now.month))
-
-    prev_month = month - 1 if month > 1 else 12
-    prev_year = year if month > 1 else year - 1
-    next_month = month + 1 if month < 12 else 1
-    next_year = year if month < 12 else year + 1
-
-    cal = calendar.Calendar(firstweekday=0)
-    month_days = cal.monthdatescalendar(year, month)
-    month_name = calendar.month_name[month]
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    # ÉVÉNEMENTS DU MOIS
-    cur.execute(
-        """
-        SELECT * FROM events
-        WHERE substr(event_date,1,4)=?
-        AND substr(event_date,6,2)=?
-        ORDER BY event_date,event_time;
-        """,
-        (str(year), f"{month:02d}"),
-    )
-    rows = cur.fetchall()
-
-    events_by_date = {}
-    for r in rows:
-        key = r["event_date"]
-        events_by_date.setdefault(key, []).append(
-            {
-                "id": r["id"],
-                "title": r["title"],
-                "date": r["event_date"],
-                "time": r["event_time"],
-                "type": r["event_type"],
-                "priority": r["priority"],
-                "notes": r["notes"],
-                "collaborators": r["collaborators"] or "",
-                "css_class": event_type_to_css(r["event_type"]),
+        /* Journée entière → désactiver l’heure */
+        allDayCheckbox.addEventListener("change", () => {
+            if (allDayCheckbox.checked) {
+                timeInput.disabled = true;
+            } else {
+                timeInput.disabled = false;
             }
-        )
+        });
 
-    # RÉCAP
-    month_summary = {}
-    for r in rows:
-        d_iso = r["event_date"]
-        month_summary.setdefault(d_iso, {"date": date.fromisoformat(d_iso), "events": []})
-        month_summary[d_iso]["events"].append(
-            {
-                "time": r["event_time"],
-                "type": r["event_type"],
-                "title": r["title"],
-                "collab": r["collaborators"],
-                "priority": r["priority"],
-                "notes": r["notes"],
+        function resetModal() {
+            editingEventId = null;
+            document.getElementById("modalTitle").innerText = "Ajouter un événement";
+            saveBtn.textContent = "Enregistrer";
+            deleteBtn.style.display = "none";
+
+            titleInput.value = "";
+            dateInput.value = "";
+            timeInput.value = "";
+            allDayCheckbox.checked = false;
+            timeInput.disabled = false;
+
+            typeSelect.value = "Rendez-vous Client";
+            typeCustomInput.style.display = "none";
+            typeCustomInput.value = "";
+
+            prioritySelect.value = "Normal";
+            notesInput.value = "";
+
+            document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+            collabOtherCheckbox.checked = false;
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
+        }
+
+        /* Ouvrir la modale avec position dynamique */
+        function openModalAt(x, y) {
+            modalOverlay.style.display = "block";
+
+            const boxWidth = modalBox.offsetWidth;
+            const boxHeight = modalBox.offsetHeight;
+
+            let left = x;
+            let top = y;
+
+            /* Empêcher de sortir à droite */
+            if (left + boxWidth > window.innerWidth - 20) {
+                left = window.innerWidth - boxWidth - 20;
             }
-        )
+            if (left < 20) left = 20;
 
-    conn.close()
+            /* Empêcher de sortir en bas (TON OPTION A) */
+            if (top + boxHeight > window.innerHeight - 20) {
+                top = window.innerHeight - boxHeight - 20;
+            }
+            if (top < 20) top = 20;
 
-    last_day = calendar.monthrange(year, month)[1]
-    month_start = date(year, month, 1)
-    month_end = date(year, month, last_day)
+            modalBox.style.position = "fixed";
+            modalBox.style.left = left + "px";
+            modalBox.style.top = top + "px";
+        }
 
-    return render_template(
-        "calendar.html",
-        calendar_days=month_days,
-        month=month,
-        year=year,
-        month_name=month_name,
-        prev_month=prev_month,
-        prev_year=prev_year,
-        next_month=next_month,
-        next_year=next_year,
-        current_day=today,
-        events_by_date=events_by_date,
-        week_summary=month_summary,
-        week_start=month_start,
-        week_end=month_end,
-    )
+        function openAddEventModalForDate(dateStr, clickX, clickY) {
+            resetModal();
+            dateInput.value = dateStr || "";
+            openModalAt(clickX, clickY);
+        }
+        function openEditModalFromBadge(badge, clickX, clickY) {
+            editingEventId = badge.dataset.eventId;
+            document.getElementById("modalTitle").innerText = "Modifier l’événement";
+            saveBtn.textContent = "Mettre à jour";
+            deleteBtn.style.display = "block";
 
+            titleInput.value = badge.dataset.eventTitle || "";
+            dateInput.value = badge.dataset.eventDate || "";
+            timeInput.value = badge.dataset.eventTime || "";
 
-# ------------------------------------------------
-# API EVENTS + EMAILS
-# ------------------------------------------------
-@app.route("/api/add_event", methods=["POST"])
-def api_add_event():
-    if "user" not in session:
-        return jsonify({"status": "error"}), 403
+            /* Journée entière */
+            if ((badge.dataset.eventTime || "") === "00:00") {
+                allDayCheckbox.checked = true;
+                timeInput.disabled = true;
+            } else {
+                allDayCheckbox.checked = false;
+                timeInput.disabled = false;
+            }
 
-    data = request.get_json() or {}
-    title = (data.get("title") or "").strip()
-    event_date = data.get("event_date") or ""
-    event_time = data.get("event_time") or ""
-    event_type = data.get("event_type") or ""
-    collaborators = (data.get("collaborators") or "").strip()
-    priority = (data.get("priority") or "Normal").strip()
-    notes = (data.get("notes") or "").strip()
+            /* Type */
+            const type = badge.dataset.eventType || "";
+            const known = [
+                "Rendez-vous Client",
+                "Rendez-vous Fournisseur",
+                "Réunion interne",
+                "Administration",
+                "Urgence cabinet",
+                "Formation"
+            ];
+            if (known.includes(type)) {
+                typeSelect.value = type;
+                typeSelect.dispatchEvent(new Event("change"));
+            } else {
+                typeSelect.value = "Autre";
+                typeSelect.dispatchEvent(new Event("change"));
+                typeCustomInput.value = type;
+            }
 
-    if not title or not event_date or not event_time or not event_type:
-        return jsonify({"status": "error"}), 400
+            /* Priorité */
+            prioritySelect.value = badge.dataset.eventPriority || "Normal";
 
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO events 
-        (user_email,title,event_date,event_time,event_type,collaborators,priority,notes)
-        VALUES (?,?,?,?,?,?,?,?);
-        """,
-        (
-            session["user"],
-            title,
-            event_date,
-            event_time,
-            event_type,
-            collaborators,
-            priority,
-            notes,
-        ),
-    )
-    conn.commit()
-    conn.close()
+            /* Notes */
+            notesInput.value = badge.dataset.eventNotes || "";
 
-    html = build_event_email(
-        "Nouvel événement",
-        title,
-        event_date,
-        event_time,
-        event_type,
-        collaborators,
-        priority,
-        notes,
-        session["user"],
-    )
-    send_event_email("D3NTAL TECH — Nouvel événement", html)
+            /* Collaborateurs */
+            document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+            collabOtherCheckbox.checked = false;
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
 
-    return jsonify({"status": "success"})
+            const raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
+            let rest = [];
 
+            raw.forEach(v => {
+                const L = v.toLowerCase();
+                if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
+                else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
+                else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
+                else if (v) rest.push(v);
+            });
 
-@app.route("/api/update_event", methods=["POST"])
-def api_update_event():
-    if "user" not in session:
-        return jsonify({"status": "error"}), 403
+            if (rest.length > 0) {
+                collabOtherCheckbox.checked = true;
+                collabOtherInput.style.display = "block";
+                collabOtherInput.value = rest.join(", ");
+            }
 
-    data = request.get_json() or {}
-    event_id = data.get("event_id")
+            openModalAt(clickX, clickY);
+        }
 
-    if not event_id:
-        return jsonify({"status": "error"}), 400
+        /* Bouton global Ajouter */
+        openModalBtn.onclick = (e) => {
+            e.preventDefault();
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 3;
+            resetModal();
+            openModalAt(centerX, centerY);
+        };
 
-    title = (data.get("title") or "").strip()
-    event_date = data.get("event_date") or ""
-    event_time = data.get("event_time") or ""
-    event_type = data.get("event_type") or ""
-    collaborators = (data.get("collaborators") or "").strip()
-    priority = (data.get("priority") or "Normal").strip()
-    notes = (data.get("notes") or "").strip()
+        closeModalBtn.onclick = () => {
+            modalOverlay.style.display = "none";
+        };
 
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        UPDATE events
-        SET title=?,event_date=?,event_time=?,event_type=?,collaborators=?,priority=?,notes=?
-        WHERE id=? AND user_email=?;
-        """,
-        (
-            title,
-            event_date,
-            event_time,
-            event_type,
-            collaborators,
-            priority,
-            notes,
-            event_id,
-            session["user"],
-        ),
-    )
-    conn.commit()
-    conn.close()
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.style.display = "none";
+            }
+        };
 
-    html = build_event_email(
-        "Événement modifié",
-        title,
-        event_date,
-        event_time,
-        event_type,
-        collaborators,
-        priority,
-        notes,
-        session["user"],
-    )
-    send_event_email("D3NTAL TECH — Événement modifié", html)
+        /* Type = Autre → champ texte */
+        typeSelect.onchange = () => {
+            if (typeSelect.value === "Autre") {
+                typeCustomInput.style.display = "block";
+            } else {
+                typeCustomInput.style.display = "none";
+                typeCustomInput.value = "";
+            }
+        };
 
-    return jsonify({"status": "success"})
+        /* Collaborateur Autre */
+        collabOtherCheckbox.onchange = () => {
+            collabOtherInput.style.display =
+                collabOtherCheckbox.checked ? "block" : "none";
+            if (!collabOtherCheckbox.checked)
+                collabOtherInput.value = "";
+        };
 
+        /* Ancien comportement : clic sur badge = modifier */
+        document.querySelectorAll(".event-badge").forEach(b => {
+            b.onclick = (evt) => {
+                evt.stopPropagation();
+                const rect = b.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                openEditModalFromBadge(b, x, y);
+            };
+        });
 
-@app.route("/api/delete_event", methods=["POST"])
-def api_delete_event():
-    if "user" not in session:
-        return jsonify({"status": "error"}), 403
+        /* MENU CONTEXTUEL */
+        function buildAndShowContextMenuForDayCell(td, clickX, clickY) {
+            const dateStr = td.dataset.date;
+            const badges = td.querySelectorAll(".event-badge");
 
-    data = request.get_json() or {}
-    event_id = data.get("event_id")
+            let html = "";
+            html += `<div class="context-item" data-action="add" data-date="${dateStr}">➕ Ajouter un événement</div>`;
 
-    if not event_id:
-        return jsonify({"status": "error"}), 400
+            badges.forEach(b => {
+                const time = b.dataset.eventTime || "";
+                const type = b.dataset.eventType || "";
+                const title = b.dataset.eventTitle || "";
+                const labelTime = (time === "00:00") ? "Journée entière" : time;
+                const label = `✏️ Modifier : ${type} (${labelTime}) — ${title}`;
+                html += `<div class="context-item" data-action="edit" data-event-id="${b.dataset.eventId}" data-date="${dateStr}">${label}</div>`;
+            });
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+            contextMenu.innerHTML = html;
+            contextMenu.style.display = "block";
 
-    cur.execute(
-        "SELECT * FROM events WHERE id=? AND user_email=?;",
-        (event_id, session["user"]),
-    )
-    row = cur.fetchone()
+            let left = clickX;
+            let top = clickY;
 
-    if row:
-        html = build_event_email(
-            "Événement supprimé",
-            row["title"],
-            row["event_date"],
-            row["event_time"],
-            row["event_type"],
-            row["collaborators"],
-            row["priority"],
-            row["notes"],
-            session["user"],
-        )
-        send_event_email("D3NTAL TECH — Événement supprimé", html)
+            const menuWidth = 260;
+            const menuHeight = 40 + 30 * badges.length;
 
-    cur.execute(
-        "DELETE FROM events WHERE id=? AND user_email=?;",
-        (event_id, session["user"]),
-    )
-    conn.commit()
-    conn.close()
+            if (left + menuWidth > window.innerWidth - 10)
+                left = window.innerWidth - menuWidth - 10;
+            if (top + menuHeight > window.innerHeight - 10)
+                top = window.innerHeight - menuHeight - 10;
+            if (left < 10) left = 10;
+            if (top < 10) top = 10;
 
-    return jsonify({"status": "success"})
+            contextMenu.style.left = left + "px";
+            contextMenu.style.top = top + "px";
+        }
 
+        /* Clic sur cellule → menu contextuel */
+        document.querySelectorAll(".calendar-day").forEach(td => {
+            td.addEventListener("click", (e) => {
+                if (e.target.closest(".event-badge")) {
+                    return;
+                }
+                e.stopPropagation();
 
-# ------------------------------------------------
-# MAIN
-# ------------------------------------------------
-if __name__ == "__main__":
-    force_init_db()
-    app.run(debug=True)
+                const rect = td.getBoundingClientRect();
+                const x = e.clientX || (rect.left + rect.width / 2);
+                const y = e.clientY || (rect.top + rect.height / 2);
 
-force_init_db()
+                buildAndShowContextMenuForDayCell(td, x, y);
+            });
+        });
+
+        /* Actions depuis le menu contextuel */
+        contextMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const item = e.target.closest(".context-item");
+            if (!item) return;
+
+            const action = item.dataset.action;
+            const dateStr = item.dataset.date;
+            const eventId = item.dataset.eventId;
+
+            const rect = contextMenu.getBoundingClientRect();
+            const clickX = rect.left + rect.width / 2;
+            const clickY = rect.top + rect.height / 2;
+
+            contextMenu.style.display = "none";
+
+            if (action === "add") {
+                openAddEventModalForDate(dateStr, clickX, clickY);
+            } else if (action === "edit") {
+                const badge = document.querySelector(`.event-badge[data-event-id="${eventId}"]`);
+                if (badge) {
+                    openEditModalFromBadge(badge, clickX, clickY);
+                }
+            }
+        });
+
+        /* Fermer le menu contextuel en cliquant ailleurs */
+        document.addEventListener("click", () => {
+            contextMenu.style.display = "none";
+        });
+
+        /* Sauvegarde */
+        saveBtn.onclick = async () => {
+            let collaborators = [];
+            document.querySelectorAll(".collab-checkbox").forEach(cb => {
+                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
+            });
+            if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
+                collaborators.push(collabOtherInput.value.trim());
+            }
+
+            let eventType = typeSelect.value;
+            if (eventType === "Autre") eventType = typeCustomInput.value.trim();
+
+            let eventTimeValue = timeInput.value;
+            if (allDayCheckbox.checked) eventTimeValue = "00:00";
+
+            const payload = {
+                title: titleInput.value.trim(),
+                event_date: dateInput.value,
+                event_time: eventTimeValue,
+                event_type: eventType,
+                collaborators: collaborators.join(", "),
+                priority: prioritySelect.value,
+                notes: notesInput.value.trim()
+            };
+
+            if (editingEventId) payload.event_id = editingEventId;
+
+            const url = editingEventId ? "/api/update_event" : "/api/add_event";
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de l’enregistrement.");
+            }
+        };
+
+        /* Suppression */
+        deleteBtn.onclick = async () => {
+            if (!editingEventId) return;
+            if (!confirm("Supprimer cet événement ?")) return;
+
+            const res = await fetch("/api/delete_event", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ event_id: editingEventId })
+            });
+
+            const data = await res.json();
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        };
+
+    </script>
+
+</body>
+</html>
