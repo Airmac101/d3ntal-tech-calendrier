@@ -22,7 +22,8 @@
 
         .modal-box {
             background: white;
-            width: 450px;
+            width: 480px;
+            max-width: 95%;
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
@@ -97,6 +98,25 @@
             text-align: center;
         }
 
+        .collab-group {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 20px;
+            font-size: 13px;
+        }
+
+        .collab-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #eventCollaboratorsOther,
+        #eventTypeCustom {
+            display: none;
+        }
+
         @keyframes fadeIn {
             from { transform: scale(0.8); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
@@ -152,12 +172,29 @@
                 {% for day in week %}
                 {% set is_other = (day.month != month) %}
                 {% set is_today = (day == current_day) %}
+                {% set day_key = day.isoformat() %}
+                {% set day_events = events_by_date.get(day_key, []) %}
 
                 <td class="
                     {% if is_other %}other-month{% endif %}
                     {% if is_today %} today{% endif %}
                 ">
-                    {{ day.day }}
+                    <div class="day-number">{{ day.day }}</div>
+
+                    {% for ev in day_events %}
+                    <div class="event-badge">
+                        <div class="event-line">
+                            <span class="event-time">{{ ev.time }}</span>
+                            <span class="event-title">{{ ev.title }}</span>
+                        </div>
+                        <div class="event-meta">
+                            {{ ev.type }}
+                            {% if ev.collaborators %}
+                                — {{ ev.collaborators }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
                 </td>
                 {% endfor %}
             </tr>
@@ -182,14 +219,27 @@
 
             <select id="eventType">
                 <option value="Rendez-vous patient">Rendez-vous patient</option>
-                <option value="Réunion équipe">Réunion équipe</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Absence / Congés">Absence / Congés</option>
+                <option value="Réunion interne">Réunion interne</option>
+                <option value="Administration">Administration</option>
+                <option value="Urgence cabinet">Urgence cabinet</option>
+                <option value="Formation">Formation</option>
                 <option value="Autre">Autre</option>
             </select>
 
-            <input id="eventCollaborators" type="text" placeholder="Collaborateurs (noms ou emails séparés par des virgules)">
-            <small>Exemple : isis@d3ntal-tech.fr, assistante@cabinet.fr</small>
+            <input id="eventTypeCustom" type="text" placeholder="Précisez le type d’événement (Autre)">
+
+            <div style="margin-top: 15px; font-size: 13px; font-weight: bold;">
+                Sélectionner les collaborateurs
+            </div>
+            <div class="collab-group">
+                <label><input type="checkbox" class="collab-checkbox" value="Denis"> Denis</label>
+                <label><input type="checkbox" class="collab-checkbox" value="Isis"> Isis</label>
+                <label><input type="checkbox" class="collab-checkbox" value="Assistante"> Assistante</label>
+                <label><input type="checkbox" class="collab-checkbox" id="collabOtherCheckbox" value="__AUTRE__"> Autre</label>
+            </div>
+
+            <input id="eventCollaboratorsOther" type="text" placeholder="Autre collaborateur (nom ou email)">
+            <small>Exemples : jean@cabinet.fr, Sophie assistante...</small>
 
             <button id="saveEventBtn">Enregistrer</button>
         </div>
@@ -206,10 +256,36 @@
         const dateInput = document.getElementById("eventDate");
         const timeInput = document.getElementById("eventTime");
         const typeSelect = document.getElementById("eventType");
-        const collaboratorsInput = document.getElementById("eventCollaborators");
+        const typeCustomInput = document.getElementById("eventTypeCustom");
+
+        const collabCheckboxes = document.querySelectorAll(".collab-checkbox");
+        const collabOtherCheckbox = document.getElementById("collabOtherCheckbox");
+        const collabOtherInput = document.getElementById("eventCollaboratorsOther");
 
         const successMessage = document.getElementById("successMessage");
         const errorMessage = document.getElementById("errorMessage");
+
+        // --- GESTION TYPE "AUTRE" ---
+        typeSelect.onchange = function () {
+            if (typeSelect.value === "Autre") {
+                typeCustomInput.style.display = "block";
+            } else {
+                typeCustomInput.style.display = "none";
+                typeCustomInput.value = "";
+            }
+        };
+
+        // --- GESTION COLLABORATEUR "AUTRE" ---
+        if (collabOtherCheckbox) {
+            collabOtherCheckbox.onchange = function () {
+                if (collabOtherCheckbox.checked) {
+                    collabOtherInput.style.display = "block";
+                } else {
+                    collabOtherInput.style.display = "none";
+                    collabOtherInput.value = "";
+                }
+            };
+        }
 
         // --- OUVERTURE MODALE ---
         openModal.onclick = function () {
@@ -219,8 +295,12 @@
             titleInput.value = "";
             dateInput.value = "";
             timeInput.value = "";
-            collaboratorsInput.value = "";
             typeSelect.value = "Rendez-vous patient";
+            typeCustomInput.style.display = "none";
+            typeCustomInput.value = "";
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
+            collabCheckboxes.forEach(cb => cb.checked = false);
         };
 
         // --- FERMETURE MODALE ---
@@ -239,11 +319,36 @@
             const title = titleInput.value.trim();
             const date = dateInput.value;
             const time = timeInput.value;
-            const eventType = typeSelect.value;
-            const collaborators = collaboratorsInput.value.trim();
+            let eventType = typeSelect.value;
+            const customType = typeCustomInput.value.trim();
+
+            if (eventType === "Autre") {
+                if (!customType) {
+                    errorMessage.innerText = "Veuillez préciser le type d’événement.";
+                    errorMessage.style.display = "block";
+                    return;
+                }
+                eventType = customType;
+            }
+
+            // Récupération des collaborateurs cochés
+            let collaboratorsList = [];
+            collabCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    if (cb.value === "__AUTRE__") {
+                        const other = collabOtherInput.value.trim();
+                        if (other) {
+                            collaboratorsList.push(other);
+                        }
+                    } else {
+                        collaboratorsList.push(cb.value);
+                    }
+                }
+            });
+            const collaborators = collaboratorsList.join(",");
 
             if (!title || !date || !time || !eventType) {
-                errorMessage.innerText = "Veuillez remplir au minimum le titre, la date, l’heure et le type.";
+                errorMessage.innerText = "Veuillez remplir le titre, la date, l’heure et le type.";
                 errorMessage.style.display = "block";
                 return;
             }
@@ -268,7 +373,8 @@
                 successMessage.style.display = "block";
                 setTimeout(() => {
                     successMessage.style.display = "none";
-                }, 3000);
+                    window.location.reload();
+                }, 1000);
 
             } else {
                 errorMessage.innerText = data.message || "Erreur.";
