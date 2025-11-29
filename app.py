@@ -9,7 +9,7 @@ from flask import (
 import sqlite3
 import os
 import calendar
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import hashlib
 
 # ------------------------------------------------
@@ -62,14 +62,28 @@ def force_init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_email TEXT NOT NULL,
             title TEXT NOT NULL,
-            event_date TEXT NOT NULL,   -- format: YYYY-MM-DD
-            event_time TEXT NOT NULL,   -- format: HH:MM
+            event_date TEXT NOT NULL,
+            event_time TEXT NOT NULL,
             event_type TEXT NOT NULL,
             collaborators TEXT,
+            priority TEXT DEFAULT 'Normal',
+            notes TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
     )
+
+    # Ajout colonne priority si absente
+    try:
+        cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
+    except:
+        pass
+
+    # Ajout colonne notes si absente
+    try:
+        cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
+    except:
+        pass
 
     # Seed utilisateurs autorisés
     pwd_hash = hash_password("D3ntalTech!@2025")
@@ -177,42 +191,82 @@ def calendar_page():
         next_month = 1
         next_year += 1
 
-    cal = calendar.Calendar(firstweekday=0)  # lundi
+    cal = calendar.Calendar(firstweekday=0)
     month_days = cal.monthdatescalendar(year, month)
     month_name = calendar.month_name[month]
 
-    # Récupérer les événements du mois (YYYY-MM-DD)
+    # Récupérer les événements du mois
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT id, user_email, title, event_date, event_time, event_type, collaborators
-        FROM events
-        WHERE substr(event_date, 1, 4) = ?
-          AND substr(event_date, 6, 2) = ?
-        ORDER BY event_date, event_time;
+        SELECT * FROM events
+        WHERE substr(event_date,1,4)=?
+        AND substr(event_date,6,2)=?
+        ORDER BY event_date,event_time;
         """,
         (str(year), f"{month:02d}"),
     )
     rows = cur.fetchall()
-    conn.close()
 
+    # Structure pour calendrier
     events_by_date = {}
     for r in rows:
-        day_key = r["event_date"]  # "YYYY-MM-DD"
-        if day_key not in events_by_date:
-            events_by_date[day_key] = []
-        events_by_date[day_key].append(
+        key = r["event_date"]
+        if key not in events_by_date:
+            events_by_date[key] = []
+        events_by_date[key].append(
             {
                 "id": r["id"],
                 "title": r["title"],
                 "date": r["event_date"],
                 "time": r["event_time"],
                 "type": r["event_type"],
+                "priority": r["priority"],
+                "notes": r["notes"],
                 "collaborators": r["collaborators"] or "",
                 "css_class": event_type_to_css(r["event_type"]),
             }
         )
+
+    # ------------------------------------------------
+    # RÉCAPITULATIF HEBDOMADAIRE
+    # ------------------------------------------------
+    # Trouver la semaine du jour actuel affiché (milieu du mois)
+    middle_day = date(year, month, 15)
+    weekday_index = middle_day.weekday()  # 0=lundi
+    week_start = middle_day - timedelta(days=weekday_index)
+    week_end = week_start + timedelta(days=6)
+
+    cur.execute(
+        """
+        SELECT * FROM events
+        WHERE event_date BETWEEN ? AND ?
+        ORDER BY event_date, event_time;
+        """,
+        (week_start.isoformat(), week_end.isoformat()),
+    )
+    week_rows = cur.fetchall()
+    conn.close()
+
+    # Organiser par jour
+    week_summary = {}
+    for i in range(7):
+        d = week_start + timedelta(days=i)
+        week_summary[d.isoformat()] = {
+            "date": d,
+            "events": []
+        }
+
+    for r in week_rows:
+        week_summary[r["event_date"]]["events"].append({
+            "time": r["event_time"],
+            "type": r["event_type"],
+            "title": r["title"],
+            "collab": r["collaborators"],
+            "priority": r["priority"],
+            "notes": r["notes"],
+        })
 
     return render_template(
         "calendar.html",
@@ -226,6 +280,9 @@ def calendar_page():
         next_year=next_year,
         current_day=date.today(),
         events_by_date=events_by_date,
+        week_summary=week_summary,
+        week_start=week_start,
+        week_end=week_end,
     )
 
 
@@ -235,26 +292,28 @@ def calendar_page():
 @app.route("/api/add_event", methods=["POST"])
 def api_add_event():
     if "user" not in session:
-        return jsonify({"status": "error", "message": "Non autorisé"}), 403
+        return jsonify({"status": "error"}), 403
 
     data = request.get_json() or {}
     title = (data.get("title") or "").strip()
-    event_date = (data.get("event_date") or "").strip()
-    event_time = (data.get("event_time") or "").strip()
-    event_type = (data.get("event_type") or "").strip()
+    event_date = (data.get("event_date") or "")
+    event_time = (data.get("event_time") or "")
+    event_type = (data.get("event_type") or "")
     collaborators = (data.get("collaborators") or "").strip()
+    priority = (data.get("priority") or "Normal").strip()
+    notes = (data.get("notes") or "").strip()
 
     if not title or not event_date or not event_time or not event_type:
-        return jsonify({"status": "error", "message": "Données manquantes"}), 400
+        return jsonify({"status": "error"}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO events (user_email, title, event_date, event_time, event_type, collaborators)
-        VALUES (?, ?, ?, ?, ?, ?);
+        INSERT INTO events (user_email,title,event_date,event_time,event_type,collaborators,priority,notes)
+        VALUES (?,?,?,?,?,?,?,?);
         """,
-        (session["user"], title, event_date, event_time, event_type, collaborators),
+        (session["user"], title, event_date, event_time, event_type, collaborators, priority, notes),
     )
     conn.commit()
     conn.close()
@@ -265,32 +324,31 @@ def api_add_event():
 @app.route("/api/update_event", methods=["POST"])
 def api_update_event():
     if "user" not in session:
-        return jsonify({"status": "error", "message": "Non autorisé"}), 403
+        return jsonify({"status": "error"}), 403
 
     data = request.get_json() or {}
     event_id = data.get("event_id")
 
     if not event_id:
-        return jsonify({"status": "error", "message": "ID manquant"}), 400
+        return jsonify({"status": "error"}), 400
 
     title = (data.get("title") or "").strip()
-    event_date = (data.get("event_date") or "").strip()
-    event_time = (data.get("event_time") or "").strip()
-    event_type = (data.get("event_type") or "").strip()
+    event_date = data.get("event_date")
+    event_time = data.get("event_time")
+    event_type = data.get("event_type")
     collaborators = (data.get("collaborators") or "").strip()
-
-    if not title or not event_date or not event_time or not event_type:
-        return jsonify({"status": "error", "message": "Données manquantes"}), 400
+    priority = (data.get("priority") or "Normal").strip()
+    notes = (data.get("notes") or "").strip()
 
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         """
         UPDATE events
-        SET title = ?, event_date = ?, event_time = ?, event_type = ?, collaborators = ?
-        WHERE id = ? AND user_email = ?;
+        SET title=?,event_date=?,event_time=?,event_type=?,collaborators=?,priority=?,notes=?
+        WHERE id=? AND user_email=?;
         """,
-        (title, event_date, event_time, event_type, collaborators, event_id, session["user"]),
+        (title, event_date, event_time, event_type, collaborators, priority, notes, event_id, session["user"]),
     )
     conn.commit()
     conn.close()
@@ -301,18 +359,18 @@ def api_update_event():
 @app.route("/api/delete_event", methods=["POST"])
 def api_delete_event():
     if "user" not in session:
-        return jsonify({"status": "error", "message": "Non autorisé"}), 403
+        return jsonify({"status": "error"}), 403
 
     data = request.get_json() or {}
     event_id = data.get("event_id")
 
     if not event_id:
-        return jsonify({"status": "error", "message": "ID manquant"}), 400
+        return jsonify({"status": "error"}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "DELETE FROM events WHERE id = ? AND user_email = ?;",
+        "DELETE FROM events WHERE id=? AND user_email=?;",
         (event_id, session["user"]),
     )
     conn.commit()
@@ -328,5 +386,4 @@ if __name__ == "__main__":
     force_init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
 
-# Render importe app:app, donc on initialise aussi ici
 force_init_db()
