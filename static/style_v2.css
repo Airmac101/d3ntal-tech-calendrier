@@ -20,8 +20,8 @@ html, body {
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
 .topbar-title {
@@ -30,28 +30,28 @@ html, body {
 }
 
 .topbar-logout {
-    margin-left: auto;
-    color: #ffffff;
+    color: white;
     font-weight: bold;
-    text-decoration: none;
     font-size: 15px;
+    text-decoration: none;
 }
 
 /* ===========================
    CONTAINER CALENDRIER
 =========================== */
 .container {
-    width: 95%;            
-    max-width: 1500px;     
+    width: 95%;
+    max-width: 1500px;
     margin: 90px auto 40px auto;
-    background: #ffffff;
+    background: white;
     padding: 30px 35px;
     border-radius: 14px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    box-sizing: border-box;
 }
 
-/* NAVIGATION DU CALENDRIER */
+/* ===========================
+   NAVIGATION CALENDRIER
+=========================== */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
@@ -64,17 +64,15 @@ html, body {
 }
 
 .nav-btn {
-    display: inline-block;
     background: #1a3d8f;
-    color: #ffffff;
+    color: white;
     padding: 10px 18px;
     border-radius: 8px;
-    text-decoration: none;
     font-weight: bold;
     font-size: 14px;
+    text-decoration: none;
 }
 
-/* BOUTON AJOUT ORANGE */
 .add-wrapper {
     margin-top: 16px;
     text-align: right;
@@ -82,12 +80,7 @@ html, body {
 
 .add-btn {
     background: #f39c12;
-    border-radius: 8px;
     font-size: 15px;
-}
-
-.nav-btn:hover {
-    background: #16326e;
 }
 
 .add-btn:hover {
@@ -106,26 +99,22 @@ html, body {
 
 .calendar th {
     background: #1a3d8f;
-    color: #ffffff;
+    color: white;
     padding: 8px;
     border: 1px solid #cfd5e6;
-    font-size: 14px;
 }
 
 .calendar td {
     border: 1px solid #cfd5e6;
     vertical-align: top;
-    padding: 6px 6px;
+    padding: 6px;
     height: 90px;
-    box-sizing: border-box;
-    position: relative;
-    background: #ffffff;
+    background: white;
 }
 
-/* JOURS HORS MOIS / AUJOURD’HUI */
 .other-month {
     background: #e8ecf7;
-    color: #777777;
+    color: #777;
 }
 
 .today {
@@ -133,7 +122,6 @@ html, body {
     border: 2px solid #1a3d8f;
 }
 
-/* NUMÉRO DU JOUR */
 .day-number {
     font-weight: bold;
     font-size: 15px;
@@ -141,7 +129,7 @@ html, body {
 }
 
 /* ===========================
-   ÉVÉNEMENTS (BADGES)
+   BADGES ÉVÉNEMENTS
 =========================== */
 .event-badge {
     background: #eef3ff;
@@ -149,57 +137,28 @@ html, body {
     border-radius: 8px;
     padding: 6px 7px;
     margin-top: 4px;
-    font-size: 14px;
     cursor: pointer;
-    overflow: hidden;
 }
 
-.event-type-rdv {
-    border-left-color: #1565c0;
-}
-.event-type-reunion {
-    border-left-color: #2e7d32;
-}
-.event-type-admin {
-    border-left-color: #ef6c00;
-}
-.event-type-urgence {
-    border-left-color: #c62828;
-}
-.event-type-formation {
-    border-left-color: #6a1b9a;
-}
-.event-type-autre {
-    border-left-color: #7e7e7e;
-}
+.event-type-rdv { border-left-color: #1565c0; }
+.event-type-reunion { border-left-color: #2e7d32; }
+.event-type-admin { border-left-color: #ef6c00; }
+.event-type-urgence { border-left-color: #c62828; }
+.event-type-formation { border-left-color: #6a1b9a; }
+.event-type-autre { border-left-color: #7e7e7e; }
 
 .event-line {
-    display: flex;
-    align-items: center;
-    gap: 6px;
     font-size: 15px;
+    display: flex;
+    gap: 6px;
     font-weight: bold;
-}
-
-.event-time {
-    font-weight: bold;
-}
-
-.event-title {
-    font-weight: normal;
-}
-
-.event-meta {
-    font-size: 13px;
-    color: #333333;
-    margin-top: 2px;
 }
 
 /* ===========================
-   RÉCAP HEBDO
+   RÉCAP HEBDOMADAIRE
 =========================== */
 .weekly-summary-box {
-    background: #ffffff;
+    background: white;
     padding: 20px 25px;
     margin-top: 35px;
     border-radius: 12px;
@@ -213,18 +172,9 @@ html, body {
     color: #1a3d8f;
 }
 
-.weekly-summary-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
 .week-line {
     font-size: 15px;
-    line-height: 1.6;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    margin-bottom: 5px;
 }
 
 .week-day {
@@ -233,101 +183,20 @@ html, body {
 }
 
 .week-none {
-    color: #777777;
+    color: #777;
     font-style: italic;
 }
 
-.week-event {
-    font-size: 14px;
-    color: #000000;
-}
+/* Priorités */
+.priority { font-weight: bold; }
 
-/* PRIORITÉS */
-.priority {
-    font-weight: bold;
-}
-
-.priority-urgent {
-    color: red;
-}
-
-.priority-important {
-    color: orange;
-}
-
-.priority-critique {
-    color: green;
-}
-
-.priority-normal {
-    color: black;
-}
+.priority-urgent { color: red; }
+.priority-important { color: orange; }
+.priority-critique { color: green; }
+.priority-normal { color: black; }
 
 /* ===========================
-   LOGIN
-=========================== */
-.login-wrapper {
-    margin-top: 120px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.login-box {
-    width: 420px;
-    background: #ffffff;
-    padding: 40px;
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-}
-
-.login-box h1 {
-    margin-bottom: 5px;
-    font-size: 26px;
-}
-
-.login-box h2 {
-    font-size: 18px;
-    margin-bottom: 25px;
-}
-
-.login-box form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.login-box input {
-    height: 42px;
-    border-radius: 6px;
-    border: 1px solid #999999;
-    padding-left: 8px;
-    font-size: 15px;
-}
-
-.login-box button {
-    background: #1a3d8f;
-    color: #ffffff;
-    border: none;
-    padding: 12px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-.error {
-    margin-top: 10px;
-    background: #ffd6d6;
-    color: #b00020;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-/* ===========================
-   MODALE AJOUT / EDIT
+   MODALE
 =========================== */
 .modal-overlay {
     position: fixed;
@@ -343,21 +212,18 @@ html, body {
 }
 
 .modal-box {
-    position: relative;
-    background: #ffffff;
+    background: white;
     width: 540px;
     max-width: 95%;
     padding: 26px 28px;
     border-radius: 14px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    text-align: left;
-    box-sizing: border-box;
 }
 
 .modal-box h3 {
-    margin-top: 0;
-    font-size: 22px;
     text-align: center;
+    margin: 0 0 15px 0;
+    font-size: 22px;
     color: #1a3d8f;
 }
 
@@ -367,64 +233,52 @@ html, body {
     width: 100%;
     padding: 12px 13px;
     margin-top: 10px;
-    border: 1px solid #888888;
+    border: 1px solid #888;
     border-radius: 8px;
     font-size: 15px;
     box-sizing: border-box;
+
+    /* Correction du problème de clic NATIF */
+    pointer-events: auto !important;
 }
 
 /* TEXTAREA NOTES */
 .notes-textarea {
     height: auto;
     font-size: 11px;
-    color: #000000;
+    color: #000;
 }
 
 /* COLLABORATEURS */
 .collab-title {
     margin-top: 14px;
     font-weight: bold;
-    font-size: 15px;
 }
 
 .collab-group {
     margin-top: 8px;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 18px;
-    font-size: 15px;
+    gap: 10px 18px;
 }
 
-.collab-group label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.collab-group input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-}
-
-/* BOUTONS MODALE */
+/* BOUTONS */
 .modal-box button {
     margin-top: 16px;
     width: 100%;
     padding: 13px;
     background: #1a3d8f;
-    color: #ffffff;
+    color: white;
     border: none;
     border-radius: 8px;
     font-size: 16px;
     font-weight: bold;
-    cursor: pointer;
 }
 
 .delete-btn {
     background: #c62828 !important;
 }
 
-/* FERMETURE MODALE */
 .close-btn {
     position: absolute;
     right: 16px;
