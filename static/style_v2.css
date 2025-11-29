@@ -1,4 +1,6 @@
-/* ===== STYLE GLOBAL CALENDRIER ===== */
+/* ================================
+   STYLE GLOBAL D3NTAL TECH
+   ================================ */
 
 body {
     margin: 0;
@@ -6,6 +8,7 @@ body {
     background: #eef2f9;
 }
 
+/* TOPBAR */
 .topbar {
     background: #123c92;
     padding: 12px 25px;
@@ -15,26 +18,32 @@ body {
     color: white;
 }
 
-.topbar a {
-    color: white;
+.topbar-title {
+    font-size: 20px;
     font-weight: bold;
-    text-decoration: none;
 }
 
+.topbar-logout {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* CONTAINER */
 .container {
     width: 90%;
     margin: 30px auto;
     background: white;
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
+/* CALENDAR NAVIGATION */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
 }
 
 .nav-btn {
@@ -46,6 +55,7 @@ body {
     font-weight: bold;
 }
 
+/* CALENDAR TABLE */
 .calendar {
     width: 100%;
     border-collapse: collapse;
@@ -66,41 +76,42 @@ body {
     position: relative;
 }
 
+/* OUTSIDE MONTH */
 .other-month {
     background: #f4f4f4;
     color: #999;
 }
 
+/* TODAY */
 .today {
     background: #e3edff !important;
 }
 
-/* ===== NUMERO DU JOUR ===== */
+/* DAY NUMBER */
 .day-number {
     font-weight: bold;
     color: #333;
 }
 
-/* ===== BADGES ÉVÉNEMENTS ===== */
-
+/* EVENT BADGES */
 .event-badge {
     margin-top: 5px;
-    padding: 5px 8px;
+    padding: 6px 8px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
-    color: white;
     font-weight: bold;
+    color: white !important;
+    opacity: 0.95;
 }
 
-/* Couleurs selon TYPE */
-
+/* COULEURS PAR TYPE (palette moderne) */
 .event-type-rdv {
-    background: #1565c0 !important; /* bleu */
+    background: #1565c0 !important;  /* bleu royal */
 }
 
 .event-type-reunion {
-    background: #2e7d32 !important; /* vert */
+    background: #2e7d32 !important; /* vert foncé */
 }
 
 .event-type-admin {
@@ -119,24 +130,130 @@ body {
     background: #7e7e7e !important; /* gris */
 }
 
+/* TEXTE DES EVENT-BADGES */
 .event-line {
-    font-size: 12px;
+    font-size: 13px;
+    color: white !important;
 }
 
 .event-meta {
-    font-size: 10px;
-    opacity: 0.85;
+    font-size: 11px;
+    opacity: 0.90;
+    color: white !important;
 }
 
-/* ===== MODALE ===== */
-
+/* MODALE */
 .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0,0,0,0.55);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-box {
+    background: white;
+    width: 480px;
+    max-width: 95%;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    text-align: left;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal-box h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #123c92;
 }
 
 .modal-box input,
 .modal-box select {
-    background: white;
+    width: 100%;
+    padding: 10px;
+    margin-top: 12px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    font-size: 14px;
 }
 
-/* ===== FIN STYLE ===== */
+.modal-box button {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    background: #123c92;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#deleteEventBtn {
+    background: #c62828 !important;
+}
+
+/* LOGIN PAGE */
+.login-wrapper {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-box {
+    background: white;
+    padding: 40px 35px;
+    border-radius: 12px;
+    width: 420px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.login-box h1 {
+    margin-top: 0;
+    color: #123c92;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.login-box button {
+    width: 100%;
+    margin-top: 18px;
+    padding: 12px;
+    background: #123c92;
+    border: none;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.error {
+    margin-top: 12px;
+    background: #ffd2d2;
+    padding: 10px;
+    color: #a11;
+    border-radius: 6px;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
