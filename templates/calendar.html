@@ -131,10 +131,16 @@
 
             <div id="errorMessageModal" class="error" style="display:none;"></div>
 
+            <!-- TITRE -->
             <input id="eventTitle" type="text" placeholder="Titre de l’événement">
-            <input id="eventDate" type="date">
-            <input id="eventTime" type="time">
 
+            <!-- DATE -->
+            <input id="eventDate" type="date" style="pointer-events: auto;">
+
+            <!-- HEURE -->
+            <input id="eventTime" type="time" style="pointer-events: auto;">
+
+            <!-- TYPE -->
             <select id="eventType">
                 <option value="Rendez-vous patient">Rendez-vous patient</option>
                 <option value="Réunion interne">Réunion interne</option>
@@ -146,6 +152,7 @@
 
             <input id="eventTypeCustom" type="text" placeholder="Précisez le type (Autre)" style="display:none;">
 
+            <!-- COLLABORATEURS -->
             <div class="collab-title">Collaborateurs :</div>
             <div class="collab-group">
                 <label><input type="checkbox" class="collab-checkbox" value="Denis"> Denis</label>
@@ -164,7 +171,7 @@
                 <option value="Critique">Critique</option>
             </select>
 
-            <!-- NOTES / INFORMATIONS SUPPLÉMENTAIRES -->
+            <!-- NOTES -->
             <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..."
                       class="notes-textarea"></textarea>
 
@@ -195,7 +202,6 @@
 
         let editingEventId = null;
 
-        // Reset
         function resetModal() {
             editingEventId = null;
             document.getElementById("modalTitle").innerText = "Ajouter un événement";
@@ -218,20 +224,18 @@
             collabOtherInput.value = "";
         }
 
-        // Open Modal
         openModalBtn.onclick = (e) => {
             e.preventDefault();
             resetModal();
             modalOverlay.style.display = "flex";
         };
 
-        // Close Modal
         closeModalBtn.onclick = () => modalOverlay.style.display = "none";
         modalOverlay.onclick = (e) => {
-            if (e.target === modalOverlay) modalOverlay.style.display = "none";
+            if (e.target === modalOverlay)
+                modalOverlay.style.display = "none";
         };
 
-        // Type "Autre"
         typeSelect.onchange = () => {
             if (typeSelect.value === "Autre") {
                 typeCustomInput.style.display = "block";
@@ -241,14 +245,13 @@
             }
         };
 
-        // Collab "Autre"
         collabOtherCheckbox.onchange = () => {
             collabOtherInput.style.display =
                 collabOtherCheckbox.checked ? "block" : "none";
-            if (!collabOtherCheckbox.checked) collabOtherInput.value = "";
+            if (!collabOtherCheckbox.checked)
+                collabOtherInput.value = "";
         };
 
-        // Click on event → EDIT
         document.querySelectorAll(".event-badge").forEach(b => {
             b.onclick = () => {
                 editingEventId = b.dataset.eventId;
@@ -269,7 +272,6 @@
                     "Urgence cabinet",
                     "Formation"
                 ];
-
                 if (known.includes(type)) {
                     typeSelect.value = type;
                     typeCustomInput.style.display = "none";
@@ -279,13 +281,9 @@
                     typeCustomInput.value = type;
                 }
 
-                // PRIORITÉ
                 prioritySelect.value = b.dataset.eventPriority || "Normal";
-
-                // NOTES
                 notesInput.value = b.dataset.eventNotes || "";
 
-                // Collaborateurs
                 document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
                 collabOtherCheckbox.checked = false;
                 collabOtherInput.style.display = "none";
@@ -295,7 +293,7 @@
                 let rest = [];
 
                 raw.forEach(v => {
-                    let L = v.toLowerCase();
+                    const L = v.toLowerCase();
                     if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
                     else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
                     else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
@@ -310,68 +308,7 @@
             };
         });
 
-        // SAVE
         saveBtn.onclick = async () => {
-
-            // Collect Collaborators
             let collaborators = [];
             document.querySelectorAll(".collab-checkbox").forEach(cb => {
-                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
-            });
-            if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
-                collaborators.push(collabOtherInput.value.trim());
-            }
-
-            let eventType = typeSelect.value;
-            if (eventType === "Autre") eventType = typeCustomInput.value.trim();
-
-            const payload = {
-                title: titleInput.value.trim(),
-                event_date: dateInput.value,
-                event_time: timeInput.value,
-                event_type: eventType,
-                collaborators: collaborators.join(", "),
-                priority: prioritySelect.value,
-                notes: notesInput.value.trim()
-            };
-
-            if (editingEventId) payload.event_id = editingEventId;
-
-            let url = editingEventId ? "/api/update_event" : "/api/add_event";
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-            if (data.status === "success") {
-                window.location.reload();
-            } else {
-                alert("Erreur lors de l’enregistrement.");
-            }
-        };
-
-        // DELETE
-        deleteBtn.onclick = async () => {
-            if (!editingEventId) return;
-            if (!confirm("Supprimer cet événement ?")) return;
-
-            const res = await fetch("/api/delete_event", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ event_id: editingEventId })
-            });
-
-            const data = await res.json();
-            if (data.status === "success") {
-                window.location.reload();
-            } else {
-                alert("Erreur lors de la suppression.");
-            }
-        };
-    </script>
-
-</body>
-</html>
+                if (cb.checked && cb.value !== "__AUTRE__") collaborators.pus
