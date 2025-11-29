@@ -63,7 +63,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const id = this.getAttribute("data-event-id");
 
-            fetch(`/get_event/${id}`)
+            // 👇 ICI LA CORRECTION : /event/ au lieu de /get_event/
+            fetch(`/event/${id}`)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById("modalTitle").innerText = "Modifier un événement";
