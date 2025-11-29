@@ -14,29 +14,31 @@
 
 <div class="calendar-container">
 
-    <div class="calendar-header">
+    <!-- NAVIGATION DU CALENDRIER (FIXÉE) -->
+    <div class="calendar-nav">
 
-        <!-- Bouton Mois Précédent -->
+        <!-- Mois précédent -->
         <a href="/calendar?year={{ prev_year }}&month={{ prev_month }}" class="btn-nav">
             ← Mois précédent
         </a>
 
+        <!-- Nom du mois -->
         <h2 class="month-title">{{ month_name }} {{ year }}</h2>
 
-        <!-- Conteneur des boutons à droite -->
-        <div class="right-buttons">
+        <!-- Boutons à droite -->
+        <div class="calendar-actions">
 
-            <!-- Bouton Export PDF (premium) -->
+            <!-- Export PDF -->
             <a href="/export_pdf" class="btn-export">
                 📄 Export PDF
             </a>
 
-            <!-- Bouton Ajouter -->
+            <!-- Ajouter un événement -->
             <button id="addEventBtn" class="btn-add">
                 + Ajouter un événement
             </button>
 
-            <!-- Bouton Mois Suivant -->
+            <!-- Mois suivant -->
             <a href="/calendar?year={{ next_year }}&month={{ next_month }}" class="btn-nav">
                 Mois suivant →
             </a>
@@ -44,40 +46,41 @@
         </div>
     </div>
 
-    <!-- Tableau calendrier -->
+    <!-- TABLEAU DU CALENDRIER -->
     <table class="calendar-table">
         <thead>
-        <tr>
-            <th>Lundi</th>
-            <th>Mardi</th>
-            <th>Mercredi</th>
-            <th>Jeudi</th>
-            <th>Vendredi</th>
-            <th>Samedi</th>
-            <th>Dimanche</th>
-        </tr>
+            <tr>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+                <th>Dimanche</th>
+            </tr>
         </thead>
+
         <tbody>
         {% for week in calendar_days %}
             <tr>
                 {% for d in week %}
                     <td class="day-cell {% if d == current_day %}today{% endif %}"
                         data-date="{{ d }}">
+                        
                         <div class="day-number">{{ d.day }}</div>
 
                         {% if events_by_date[d.isoformat()] %}
                             <div class="events-container">
                                 {% for ev in events_by_date[d.isoformat()] %}
                                     <div class="event-item {{ ev.css_class }}">
-                                        <strong>{{ ev.title }}</strong>
-                                        <br>
-                                        <span>{{ ev.type }}</span>
-                                        <br>
+                                        <strong>{{ ev.title }}</strong><br>
+                                        <span>{{ ev.type }}</span><br>
                                         <small>— {{ ev.collaborators }}</small>
                                     </div>
                                 {% endfor %}
                             </div>
                         {% endif %}
+
                     </td>
                 {% endfor %}
             </tr>
@@ -87,7 +90,6 @@
 
 </div>
 
-
 <!-- RÉCAPITULATIF DU MOIS -->
 <div class="summary-container">
     <h3>Récapitulatif du mois : {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}</h3>
@@ -95,19 +97,14 @@
     {% if week_summary %}
         {% for d, info in week_summary.items() %}
             <p>
-                <strong>
-                    {{ info.date.strftime('%A %d %B').capitalize() }} :
-                </strong>
+                <strong>{{ info.date.strftime('%A %d %B').capitalize() }} :</strong>
+
                 {% for ev in info.events %}
-                    <span style="color: red; font-weight: bold;">
+                    <span style="color:red; font-weight:bold;">
                         {% if ev.priority.lower() == "urgent" %}[URGENT]{% endif %}
                     </span>
 
-                    {{ ev.time }} —
-                    {{ ev.type }} —
-                    {{ ev.title }} 
-                    ({{ ev.collab }})
-                    —
+                    {{ ev.time }} — {{ ev.type }} — {{ ev.title }} ({{ ev.collab }}) —
                     <em>{{ ev.notes }}</em>
 
                     {% if not loop.last %} — {% endif %}
@@ -119,8 +116,6 @@
     {% endif %}
 </div>
 
-
-<!-- MODAL JS chargé par ton JS existant -->
 <script src="/static/calendar.js"></script>
 
 </body>
