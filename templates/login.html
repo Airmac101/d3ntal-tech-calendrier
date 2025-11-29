@@ -3,32 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>D3NTAL TECH - Connexion</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}">
+
+    <!-- STYLE LOGIN ISOLÉ -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
 </head>
 
 <body>
 
-    <!-- TOPBAR -->
-    <div class="topbar">
-        <div class="topbar-title">D3NTAL TECH</div>
-    </div>
+    <div class="login-container">
+        <h1>D3NTAL TECH</h1>
+        <h2>Connexion</h2>
 
-    <!-- LOGIN WRAPPER -->
-    <div class="login-wrapper">
-        <div class="login-box">
-            <h1>D3NTAL TECH</h1>
-            <h2>Connexion sécurisée</h2>
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
 
-            {% if error %}
-            <div class="error">{{ error }}</div>
-            {% endif %}
+        <form method="POST">
+            <input type="text" name="email" placeholder="Adresse email" required>
+            <input type="password" name="password" placeholder="Mot de passe" required>
 
-            <form method="POST" action="/">
-                <input type="email" name="email" placeholder="Email autorisé" required>
-                <input type="password" name="password" placeholder="Mot de passe" required>
-                <button type="submit">Se connecter</button>
-            </form>
-        </div>
+            <input type="submit" value="Se connecter">
+        </form>
     </div>
 
 </body>
