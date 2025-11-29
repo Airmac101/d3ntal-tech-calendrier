@@ -14,7 +14,7 @@ from datetime import datetime, date
 import hashlib
 import smtplib
 from email.mime.multipart import MIMEMultipart
-from email.mime_text import MIMEText
+from email.mime.text import MIMEText
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
