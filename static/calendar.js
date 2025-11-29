@@ -13,106 +13,219 @@ document.addEventListener("DOMContentLoaded", function () {
     const priorityField = document.getElementById("eventPriority");
 
     const form = document.getElementById("eventForm");
+    const deleteBtn = document.getElementById("deleteEventBtn"); // peut être null si pas encore dans le HTML
 
     // ----------------------------
-    // FONCTIONS
+    // FONCTIONS DE BASE
     // ----------------------------
 
     function openModal() {
+        if (!modal) return;
         modal.style.display = "block";
     }
 
     function closeModal() {
+        if (!modal) return;
         modal.style.display = "none";
-        form.reset();
-        eventIdField.value = "";
+        if (form) form.reset();
+        if (eventIdField) eventIdField.value = "";
+        if (deleteBtn) {
+            deleteBtn.style.display = "none";
+        }
     }
 
-    // OUVERTURE MODAL POUR CREATION
-    addBtn.addEventListener("click", function () {
-        document.getElementById("modalTitle").innerText = "Ajouter un événement";
-        openModal();
-    });
+    // ----------------------------
+    // OUVERTURE POUR CREATION
+    // ----------------------------
+    if (addBtn) {
+        addBtn.addEventListener("click", function () {
+            const modalTitle = document.getElementById("modalTitle");
+            if (modalTitle) modalTitle.innerText = "Ajouter un événement";
 
-    // OUVERTURE MODAL LORS DU CLIC SUR UN JOUR
-    document.querySelectorAll(".day-cell").forEach(cell => {
+            if (eventIdField) eventIdField.value = "";
+            if (dateField) dateField.value = "";
+            if (typeField) typeField.value = "";
+            if (titleField) titleField.value = "";
+            if (collabField) collabField.value = "";
+            if (notesField) notesField.value = "";
+            if (priorityField) priorityField.value = "normal";
+
+            if (deleteBtn) deleteBtn.style.display = "none";
+
+            openModal();
+        });
+    }
+
+    // ----------------------------
+    // CLIC SUR UN JOUR → CREATION
+    // ----------------------------
+    document.querySelectorAll(".day-cell").forEach(function (cell) {
         cell.addEventListener("click", function (event) {
 
-            // éviter d'ouvrir le modal si on clique sur un événement
-            if (event.target.classList.contains("event-item")) return;
+            // Ne pas ouvrir si on a cliqué sur un événement déjà existant
+            if (event.target.classList.contains("event-item")) {
+                return;
+            }
 
-            const date = this.getAttribute("data-date").substring(0, 10);
-            document.getElementById("modalTitle").innerText = "Ajouter un événement";
+            const dateAttr = this.getAttribute("data-date");
+            const date = dateAttr ? dateAttr.substring(0, 10) : "";
 
-            eventIdField.value = "";
-            dateField.value = date;
-            typeField.value = "";
-            titleField.value = "";
-            collabField.value = "";
-            notesField.value = "";
-            priorityField.value = "normal";
+            const modalTitle = document.getElementById("modalTitle");
+            if (modalTitle) modalTitle.innerText = "Ajouter un événement";
+
+            if (eventIdField) eventIdField.value = "";
+            if (dateField) dateField.value = date;
+            if (typeField) typeField.value = "";
+            if (titleField) titleField.value = "";
+            if (collabField) collabField.value = "";
+            if (notesField) notesField.value = "";
+            if (priorityField) priorityField.value = "normal";
+
+            if (deleteBtn) deleteBtn.style.display = "none";
 
             openModal();
         });
     });
 
-    // OUVERTURE MODAL POUR EDITION D'UN EVENEMENT
-    document.querySelectorAll(".event-item").forEach(item => {
+    // ----------------------------
+    // CLIC SUR UN EVENEMENT → EDITION
+    // ----------------------------
+    document.querySelectorAll(".event-item").forEach(function (item) {
         item.addEventListener("click", function (e) {
             e.stopPropagation();
 
             const id = this.getAttribute("data-event-id");
+            if (!id) return;
 
-            // 👇 ICI LA CORRECTION : /event/ au lieu de /get_event/
             fetch(`/event/${id}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("modalTitle").innerText = "Modifier un événement";
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Erreur lors du chargement de l'événement");
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.status === "error") {
+                        throw new Error(data.message || "Erreur API");
+                    }
 
-                    eventIdField.value = data.id;
-                    dateField.value = data.date;
-                    typeField.value = data.type;
-                    titleField.value = data.title;
-                    collabField.value = data.collaborators;
-                    notesField.value = data.notes;
-                    priorityField.value = data.priority;
+                    const modalTitle = document.getElementById("modalTitle");
+                    if (modalTitle) modalTitle.innerText = "Modifier un événement";
+
+                    if (eventIdField) eventIdField.value = data.id || "";
+                    if (dateField) dateField.value = data.date || "";
+                    if (typeField) typeField.value = data.type || "";
+                    if (titleField) titleField.value = data.title || "";
+                    if (collabField) collabField.value = data.collaborators || "";
+                    if (notesField) notesField.value = data.notes || "";
+                    if (priorityField) {
+                        priorityField.value = (data.priority || "normal").toLowerCase();
+                    }
+
+                    if (deleteBtn) {
+                        deleteBtn.style.display = "inline-block";
+                    }
 
                     openModal();
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    alert("Impossible de charger cet événement.");
                 });
         });
     });
 
+    // ----------------------------
     // FERMETURE DU MODAL
-    closeBtn.addEventListener("click", closeModal);
+    // ----------------------------
+    if (closeBtn) {
+        closeBtn.addEventListener("click", closeModal);
+    }
 
     window.addEventListener("click", function (event) {
-        if (event.target === modal) closeModal();
+        if (event.target === modal) {
+            closeModal();
+        }
     });
 
-    // ENVOI DU FORMULAIRE
-    form.addEventListener("submit", function (event) {
-        event.preventDefault();
+    // ----------------------------
+    // ENREGISTREMENT (CREATION / MODIF)
+    // ----------------------------
+    if (form) {
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
 
-        const payload = {
-            id: eventIdField.value,
-            date: dateField.value,
-            type: typeField.value,
-            title: titleField.value,
-            collaborators: collabField.value,
-            notes: notesField.value,
-            priority: priorityField.value
-        };
+            const payload = {
+                id: eventIdField ? eventIdField.value : "",
+                date: dateField ? dateField.value : "",
+                type: typeField ? typeField.value : "",
+                title: titleField ? titleField.value : "",
+                collaborators: collabField ? collabField.value : "",
+                notes: notesField ? notesField.value : "",
+                priority: priorityField ? priorityField.value : "normal"
+            };
 
-        fetch("/save_event", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        })
-            .then(r => r.json())
-            .then(() => {
-                location.reload();
-            });
+            fetch("/save_event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Erreur lors de l'enregistrement");
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.status !== "success") {
+                        throw new Error(data.message || "Erreur lors de l'enregistrement");
+                    }
+                    location.reload();
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    alert("Impossible d'enregistrer cet événement.");
+                });
+        });
+    }
 
-    });
+    // ----------------------------
+    // SUPPRESSION DEPUIS LE MODAL
+    // ----------------------------
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", function () {
+            const id = eventIdField ? eventIdField.value : "";
+            if (!id) {
+                return;
+            }
+
+            const confirmDelete = window.confirm(
+                "Supprimer définitivement cet événement ?"
+            );
+            if (!confirmDelete) return;
+
+            fetch("/delete_event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id })
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Erreur lors de la suppression");
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.status !== "success") {
+                        throw new Error(data.message || "Erreur lors de la suppression");
+                    }
+                    location.reload();
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    alert("Impossible de supprimer cet événement.");
+                });
+        });
+    }
 
 });
