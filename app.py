@@ -9,7 +9,7 @@ from flask import (
 import sqlite3
 import os
 import calendar
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 import hashlib
 
 # ------------------------------------------------
@@ -41,6 +41,8 @@ def force_init_db():
     """
     Force l'initialisation de la DB à chaque démarrage
     (nécessaire pour Render).
+    ATTENTION : on supprime et recrée la table events
+    (ok tant qu'on est en phase de test).
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -58,7 +60,7 @@ def force_init_db():
 
     # ------------------------------------------------
     # Table des événements
-    # (on la recrée pour ajouter/modifier les champs)
+    # (recréée pour garantir la structure)
     # ------------------------------------------------
     cursor.execute("DROP TABLE IF EXISTS events;")
     cursor.execute("""
@@ -232,10 +234,12 @@ def calendar_page():
     for row in rows:
         d = row["event_date"]
         events_by_date.setdefault(d, []).append({
+            "id": row["id"],
             "time": row["event_time"],
             "title": row["title"],
             "type": row["event_type"],
             "collaborators": format_collaborators(row["collaborators"] or ""),
+            "raw_collaborators": row["collaborators"] or "",
         })
 
     return render_template(
@@ -281,6 +285,74 @@ def api_add_event():
 
     conn.commit()
     conn.close()
+
+    return jsonify({"status": "success"}), 200
+
+
+# ------------------------------------------------
+# API : MISE À JOUR D'ÉVÉNEMENT
+# ------------------------------------------------
+@app.route("/api/update_event", methods=["POST"])
+def api_update_event():
+    if "user" not in session:
+        return jsonify({"status": "error", "message": "Non autorisé"}), 403
+
+    data = request.get_json() or {}
+    event_id = data.get("event_id")
+    title = (data.get("title") or "").strip()
+    event_date = data.get("event_date") or ""
+    event_time = (data.get("event_time") or "").strip()
+    event_type = (data.get("event_type") or "").strip()
+    collaborators = (data.get("collaborators") or "").strip()
+
+    if not event_id or not title or not event_date or not event_time or not event_type:
+        return jsonify({"status": "error", "message": "Données manquantes"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE events
+        SET title = ?, event_date = ?, event_time = ?, event_type = ?, collaborators = ?
+        WHERE id = ? AND user_email = ?;
+    """, (title, event_date, event_time, event_type, collaborators, event_id, session["user"]))
+
+    conn.commit()
+    modified = cursor.rowcount
+    conn.close()
+
+    if modified == 0:
+        return jsonify({"status": "error", "message": "Événement introuvable ou non autorisé"}), 404
+
+    return jsonify({"status": "success"}), 200
+
+
+# ------------------------------------------------
+# API : SUPPRESSION D'ÉVÉNEMENT
+# ------------------------------------------------
+@app.route("/api/delete_event", methods=["POST"])
+def api_delete_event():
+    if "user" not in session:
+        return jsonify({"status": "error", "message": "Non autorisé"}), 403
+
+    data = request.get_json() or {}
+    event_id = data.get("event_id")
+
+    if not event_id:
+        return jsonify({"status": "error", "message": "ID manquant"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM events
+        WHERE id = ? AND user_email = ?;
+    """, (event_id, session["user"]))
+    conn.commit()
+    deleted = cursor.rowcount
+    conn.close()
+
+    if deleted == 0:
+        return jsonify({"status": "error", "message": "Événement introuvable ou non autorisé"}), 404
 
     return jsonify({"status": "success"}), 200
 
