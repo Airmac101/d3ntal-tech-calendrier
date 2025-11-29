@@ -11,17 +11,37 @@
 
     <h1>Calendrier - D3NTAL TECH</h1>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <!-- Navigation mois -->
+    <div class="calendar-nav">
         <a class="nav-btn" href="/calendar?year={{ prev_year }}&month={{ prev_month }}">← Mois précédent</a>
         <h2>{{ month_name }} {{ year }}</h2>
         <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
     </div>
 
+    <!-- Jours de la semaine -->
     <table class="calendar">
+        <tr>
+            <th>Lun</th>
+            <th>Mar</th>
+            <th>Mer</th>
+            <th>Jeu</th>
+            <th>Ven</th>
+            <th>Sam</th>
+            <th>Dim</th>
+        </tr>
+
+        <!-- Grille du calendrier -->
         {% for week in calendar_days %}
             <tr>
                 {% for day in week %}
-                    <td>{{ day.day }}</td>
+                    <td 
+                        class="
+                            {% if day.month != month %}other-month{% endif %}
+                            {% if day == current_day %}today{% endif %}
+                        "
+                    >
+                        {{ day.day }}
+                    </td>
                 {% endfor %}
             </tr>
         {% endfor %}
@@ -32,4 +52,5 @@
 
 </body>
 </html>
+
 
