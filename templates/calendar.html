@@ -1,27 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Calendar - D3NTAL TECH</title>
+    <title>Calendrier - D3NTAL TECH</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>Calendar - D3NTAL TECH</h1>
+<div class="container">
+    <h1>Calendrier - D3NTAL TECH</h1>
+    <h2>{{ month_name }} {{ year }}</h2>
 
-<h2>{{ month_name }} {{ year }}</h2>
-
-<table border="1" cellpadding="10">
-    {% for week in calendar_days %}
-    <tr>
-        {% for day in week %}
-        <td>{{ day.day }}</td>
+    <table class="calendar">
+        {% for week in calendar_days %}
+            <tr>
+                {% for day in week %}
+                    <td>{{ day.day }}</td>
+                {% endfor %}
+            </tr>
         {% endfor %}
-    </tr>
-    {% endfor %}
-</table>
+    </table>
 
-<br>
-<a href="/logout">Logout</a>
+    <a class="logout" href="/logout">Déconnexion</a>
+</div>
 
 </body>
 </html>
