@@ -8,8 +8,14 @@
 <body>
 
 <div class="container">
+
     <h1>Calendrier - D3NTAL TECH</h1>
-    <h2>{{ month_name }} {{ year }}</h2>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <a class="nav-btn" href="/calendar?year={{ prev_year }}&month={{ prev_month }}">← Mois précédent</a>
+        <h2>{{ month_name }} {{ year }}</h2>
+        <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
+    </div>
 
     <table class="calendar">
         {% for week in calendar_days %}
@@ -26,3 +32,4 @@
 
 </body>
 </html>
+
