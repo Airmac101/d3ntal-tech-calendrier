@@ -22,7 +22,7 @@
 
         .modal-box {
             background: white;
-            width: 420px;
+            width: 450px;
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
@@ -46,12 +46,20 @@
             color: #333;
         }
 
-        .modal-box input {
+        .modal-box input,
+        .modal-box select {
             width: 100%;
             padding: 10px;
             margin-top: 12px;
             border: 1px solid #aaa;
             border-radius: 6px;
+        }
+
+        .modal-box small {
+            display: block;
+            margin-top: 4px;
+            color: #666;
+            font-size: 11px;
         }
 
         .modal-box button {
@@ -167,7 +175,19 @@
             <div id="errorMessage"></div>
 
             <input id="eventTitle" type="text" placeholder="Titre de l’événement">
+
             <input id="eventDate" type="date">
+
+            <select id="eventType">
+                <option value="Rendez-vous patient">Rendez-vous patient</option>
+                <option value="Réunion équipe">Réunion équipe</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Absence / Congés">Absence / Congés</option>
+                <option value="Autre">Autre</option>
+            </select>
+
+            <input id="eventCollaborators" type="text" placeholder="Collaborateurs (noms ou emails séparés par des virgules)">
+            <small>Exemple : isis@d3ntal-tech.fr, assistante@cabinet.fr</small>
 
             <button id="saveEventBtn">Enregistrer</button>
         </div>
@@ -182,6 +202,8 @@
         const saveBtn = document.getElementById("saveEventBtn");
         const titleInput = document.getElementById("eventTitle");
         const dateInput = document.getElementById("eventDate");
+        const typeSelect = document.getElementById("eventType");
+        const collaboratorsInput = document.getElementById("eventCollaborators");
 
         const successMessage = document.getElementById("successMessage");
         const errorMessage = document.getElementById("errorMessage");
@@ -190,8 +212,11 @@
         openModal.onclick = function () {
             modalOverlay.style.display = "flex";
             errorMessage.style.display = "none";
+            errorMessage.innerText = "";
             titleInput.value = "";
             dateInput.value = "";
+            collaboratorsInput.value = "";
+            typeSelect.value = "Rendez-vous patient";
         };
 
         // --- FERMETURE MODALE ---
@@ -209,9 +234,11 @@
         saveBtn.onclick = async function () {
             const title = titleInput.value.trim();
             const date = dateInput.value;
+            const eventType = typeSelect.value;
+            const collaborators = collaboratorsInput.value.trim();
 
-            if (!title || !date) {
-                errorMessage.innerText = "Veuillez remplir tous les champs.";
+            if (!title || !date || !eventType) {
+                errorMessage.innerText = "Veuillez remplir au minimum le titre, la date et le type.";
                 errorMessage.style.display = "block";
                 return;
             }
@@ -221,7 +248,9 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     title: title,
-                    event_date: date
+                    event_date: date,
+                    event_type: eventType,
+                    collaborators: collaborators
                 })
             });
 
