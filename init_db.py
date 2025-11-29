@@ -1,56 +1,71 @@
 import sqlite3
 import os
+import hashlib
 
-# Dossier DB
 DB_DIR = "db"
 DB_PATH = os.path.join(DB_DIR, "database.db")
 
-# Création du dossier si absent
-os.makedirs(DB_DIR, exist_ok=True)
+# Sel pour le hash (doit être identique à celui utilisé dans app.py)
+SALT = "D3NTAL_TECH_SUPER_SALT_2025"
 
-# Connexion
-conn = sqlite3.connect(DB_PATH)
-cursor = conn.cursor()
 
-# ---------------------------------------------------------
-# TABLE 1 — Utilisateurs autorisés
-# ---------------------------------------------------------
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-""")
+def hash_password(plain_password: str) -> str:
+    """
+    Retourne un hash sécurisé du mot de passe.
+    """
+    to_hash = (SALT + plain_password).encode("utf-8")
+    return hashlib.sha256(to_hash).hexdigest()
 
-# ---------------------------------------------------------
-# TABLE 2 — Événements du calendrier
-# ---------------------------------------------------------
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_email TEXT NOT NULL,
-        event_date TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-""")
 
-# ---------------------------------------------------------
-# TABLE 3 — Logs de connexion
-# ---------------------------------------------------------
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS login_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL,
-        ip TEXT,
-        login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-""")
+def init_db():
+    """
+    Crée la base SQLite et la table authorized_users,
+    puis insère les utilisateurs autorisés avec le mot de passe hashé.
+    """
+    os.makedirs(DB_DIR, exist_ok=True)
 
-conn.commit()
-conn.close()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
-print("✅ Base SQLite créée avec succès !")
-print(f"📁 Emplacement : {DB_PATH}")
+    # Table des utilisateurs autorisés
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS authorized_users (
+            email TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+    )
+
+    # Mot de passe unique pour tous (hashé)
+    plain_password = "D3ntalTech!@2025"
+    pwd_hash = hash_password(plain_password)
+
+    # Liste des emails autorisés
+    authorized_emails = [
+        "denismeuret01@gmail.com",
+        "isis.stouvenel@d3ntal-tech.fr",
+        "isis.42420@gmail.com",
+        "denismeuret@d3ntal-tech.fr",
+    ]
+
+    # Insertion / mise à jour
+    for email in authorized_emails:
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO authorized_users (email, password_hash)
+            VALUES (?, ?);
+            """,
+            (email, pwd_hash),
+        )
+
+    conn.commit()
+    conn.close()
+
+    print("✅ Base de données initialisée avec succès.")
+    print(f"📁 Emplacement : {DB_PATH}")
+
+
+if __name__ == "__main__":
+    init_db()
