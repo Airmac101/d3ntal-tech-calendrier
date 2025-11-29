@@ -131,7 +131,6 @@
         </div>
 
     </div>
-
     <!-- MODALE AJOUT / EDIT -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box" id="modalBox">
@@ -189,7 +188,7 @@
 
             <!-- NOTES -->
             <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..."
-                      class="notes-textarea"></textarea>
+                class="notes-textarea"></textarea>
 
             <button id="saveEventBtn">Enregistrer</button>
             <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
@@ -226,7 +225,7 @@
 
         let editingEventId = null;
 
-        // Forcer le picker natif sur clic
+        /* Forcer le picker natif */
         if (dateInput && dateInput.showPicker) {
             dateInput.addEventListener("click", () => dateInput.showPicker());
         }
@@ -236,7 +235,7 @@
             });
         }
 
-        // Gestion journée entière → désactiver l’heure
+        /* Journée entière → désactiver l’heure */
         allDayCheckbox.addEventListener("change", () => {
             if (allDayCheckbox.checked) {
                 timeInput.disabled = true;
@@ -270,25 +269,26 @@
             collabOtherInput.value = "";
         }
 
-        // Ouvrir la modale à une position donnée (proche du clic)
+        /* Ouvrir la modale avec position dynamique */
         function openModalAt(x, y) {
             modalOverlay.style.display = "block";
 
-            // Positionner la boîte proche du clic
-            const boxWidth = 540;
-            const boxHeight = 400;
+            const boxWidth = modalBox.offsetWidth;
+            const boxHeight = modalBox.offsetHeight;
 
             let left = x;
             let top = y;
 
+            /* Empêcher de sortir à droite */
             if (left + boxWidth > window.innerWidth - 20) {
                 left = window.innerWidth - boxWidth - 20;
             }
+            if (left < 20) left = 20;
+
+            /* Empêcher de sortir en bas (TON OPTION A) */
             if (top + boxHeight > window.innerHeight - 20) {
                 top = window.innerHeight - boxHeight - 20;
             }
-
-            if (left < 20) left = 20;
             if (top < 20) top = 20;
 
             modalBox.style.position = "fixed";
@@ -301,7 +301,6 @@
             dateInput.value = dateStr || "";
             openModalAt(clickX, clickY);
         }
-
         function openEditModalFromBadge(badge, clickX, clickY) {
             editingEventId = badge.dataset.eventId;
             document.getElementById("modalTitle").innerText = "Modifier l’événement";
@@ -312,6 +311,7 @@
             dateInput.value = badge.dataset.eventDate || "";
             timeInput.value = badge.dataset.eventTime || "";
 
+            /* Journée entière */
             if ((badge.dataset.eventTime || "") === "00:00") {
                 allDayCheckbox.checked = true;
                 timeInput.disabled = true;
@@ -320,6 +320,7 @@
                 timeInput.disabled = false;
             }
 
+            /* Type */
             const type = badge.dataset.eventType || "";
             const known = [
                 "Rendez-vous Client",
@@ -338,9 +339,13 @@
                 typeCustomInput.value = type;
             }
 
+            /* Priorité */
             prioritySelect.value = badge.dataset.eventPriority || "Normal";
+
+            /* Notes */
             notesInput.value = badge.dataset.eventNotes || "";
 
+            /* Collaborateurs */
             document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
             collabOtherCheckbox.checked = false;
             collabOtherInput.style.display = "none";
@@ -366,7 +371,7 @@
             openModalAt(clickX, clickY);
         }
 
-        // Bouton global Ajouter
+        /* Bouton global Ajouter */
         openModalBtn.onclick = (e) => {
             e.preventDefault();
             const centerX = window.innerWidth / 2;
@@ -385,6 +390,7 @@
             }
         };
 
+        /* Type = Autre → champ texte */
         typeSelect.onchange = () => {
             if (typeSelect.value === "Autre") {
                 typeCustomInput.style.display = "block";
@@ -394,6 +400,7 @@
             }
         };
 
+        /* Collaborateur Autre */
         collabOtherCheckbox.onchange = () => {
             collabOtherInput.style.display =
                 collabOtherCheckbox.checked ? "block" : "none";
@@ -401,10 +408,10 @@
                 collabOtherInput.value = "";
         };
 
-        // Ancien comportement : clic direct sur le badge = modifier directement
+        /* Ancien comportement : clic sur badge = modifier */
         document.querySelectorAll(".event-badge").forEach(b => {
             b.onclick = (evt) => {
-                evt.stopPropagation(); // ne pas déclencher le menu de la case
+                evt.stopPropagation();
                 const rect = b.getBoundingClientRect();
                 const x = rect.left + rect.width / 2;
                 const y = rect.top + rect.height / 2;
@@ -412,7 +419,7 @@
             };
         });
 
-        // MENU CONTEXTUEL PAR JOUR
+        /* MENU CONTEXTUEL */
         function buildAndShowContextMenuForDayCell(td, clickX, clickY) {
             const dateStr = td.dataset.date;
             const badges = td.querySelectorAll(".event-badge");
@@ -449,9 +456,9 @@
             contextMenu.style.top = top + "px";
         }
 
+        /* Clic sur cellule → menu contextuel */
         document.querySelectorAll(".calendar-day").forEach(td => {
             td.addEventListener("click", (e) => {
-                // Si on clique sur un badge directement, on laisse le handler du badge gérer
                 if (e.target.closest(".event-badge")) {
                     return;
                 }
@@ -465,7 +472,7 @@
             });
         });
 
-        // Clic sur le menu contextuel
+        /* Actions depuis le menu contextuel */
         contextMenu.addEventListener("click", (e) => {
             e.stopPropagation();
             const item = e.target.closest(".context-item");
@@ -473,16 +480,17 @@
 
             const action = item.dataset.action;
             const dateStr = item.dataset.date;
-            const clickRect = contextMenu.getBoundingClientRect();
-            const clickX = clickRect.left + clickRect.width / 2;
-            const clickY = clickRect.top + clickRect.height / 2;
+            const eventId = item.dataset.eventId;
+
+            const rect = contextMenu.getBoundingClientRect();
+            const clickX = rect.left + rect.width / 2;
+            const clickY = rect.top + rect.height / 2;
 
             contextMenu.style.display = "none";
 
             if (action === "add") {
                 openAddEventModalForDate(dateStr, clickX, clickY);
             } else if (action === "edit") {
-                const eventId = item.dataset.eventId;
                 const badge = document.querySelector(`.event-badge[data-event-id="${eventId}"]`);
                 if (badge) {
                     openEditModalFromBadge(badge, clickX, clickY);
@@ -490,11 +498,12 @@
             }
         });
 
-        // Fermer le menu contextuel en cliquant ailleurs
+        /* Fermer le menu contextuel en cliquant ailleurs */
         document.addEventListener("click", () => {
             contextMenu.style.display = "none";
         });
 
+        /* Sauvegarde */
         saveBtn.onclick = async () => {
             let collaborators = [];
             document.querySelectorAll(".collab-checkbox").forEach(cb => {
@@ -508,9 +517,7 @@
             if (eventType === "Autre") eventType = typeCustomInput.value.trim();
 
             let eventTimeValue = timeInput.value;
-            if (allDayCheckbox.checked) {
-                eventTimeValue = "00:00";
-            }
+            if (allDayCheckbox.checked) eventTimeValue = "00:00";
 
             const payload = {
                 title: titleInput.value.trim(),
@@ -540,6 +547,7 @@
             }
         };
 
+        /* Suppression */
         deleteBtn.onclick = async () => {
             if (!editingEventId) return;
             if (!confirm("Supprimer cet événement ?")) return;
@@ -557,6 +565,7 @@
                 alert("Erreur lors de la suppression.");
             }
         };
+
     </script>
 
 </body>
