@@ -2,28 +2,28 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Accès - D3NTAL TECH</title>
+    <title>Accès D3NTAL TECH</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>Accès sécurisé D3NTAL TECH</h1>
+<div class="container">
+    <h1>D3NTAL TECH</h1>
+    <h2>Connexion sécurisée</h2>
 
-<form method="POST">
-    <label>Email :</label><br><br>
-    <input type="email" name="email" required>
-    <br><br>
-    <button type="submit">Valider</button>
-</form>
+    <form method="POST">
+        <label>Email autorisé</label>
+        <input type="email" name="email" required>
 
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li style="color:red;">{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-{% endwith %}
+        <button type="submit">Se connecter</button>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <p class="error">{{ messages[0] }}</p>
+        {% endif %}
+    {% endwith %}
+</div>
 
 </body>
 </html>
