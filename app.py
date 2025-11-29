@@ -5,30 +5,32 @@ from flask import (
     redirect,
     session,
     jsonify,
+    send_file,
 )
 import sqlite3
 import os
 import calendar
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 import hashlib
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
 
-# ------------------------------------------------
-# CONFIG FLASK
-# ------------------------------------------------
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "SUPER_SECRET_KEY_D3NTAL_TECH_2025")
 
-# IMPORTANT : base PERSISTANTE sur Render
+# -------- PERSISTENT DB --------
 DB_PATH = "/var/data/database.db"
 SALT = "D3NTAL_TECH_SUPER_SALT_2025"
 
 
-# ------------------------------------------------
-# EMAIL — UTILITAIRE GLOBAL
-# ------------------------------------------------
+# -------- EMAIL HANDLING --------
 def send_event_email(subject: str, html_content: str):
     smtp_server = os.environ.get("SMTP_SERVER")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
@@ -41,7 +43,7 @@ def send_event_email(subject: str, html_content: str):
     ]
 
     if not smtp_server or not smtp_user or not smtp_password:
-        print("EMAIL WARNING: SMTP configuration incomplete, email not sent.")
+        print("EMAIL WARNING: SMTP configuration incomplete.")
         return
 
     msg = MIMEMultipart("alternative")
@@ -56,67 +58,35 @@ def send_event_email(subject: str, html_content: str):
         server.login(smtp_user, smtp_password)
         server.sendmail(smtp_user, recipients, msg.as_string())
         server.quit()
-        print("EMAIL sent successfully.")
+        print("EMAIL SENT")
     except Exception as e:
         print("EMAIL ERROR:", e)
 
 
-# ------------------------------------------------
-# EMAIL — TEMPLATE HTML NOTION-LIKE
-# ------------------------------------------------
-def build_event_email(
-    action: str,
-    title: str,
-    event_date: str,
-    event_time: str,
-    event_type: str,
-    collaborators: str,
-    priority: str,
-    notes: str,
-    user_email: str,
-) -> str:
-
-    collaborators = collaborators or ""
-    notes = notes or ""
-    priority = priority or "Normal"
-    event_time = event_time or ""
+def build_event_email(action, title, event_date, event_time,
+                      event_type, collaborators, priority, notes, user_email):
 
     html = f"""
-    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7;">
-        <h2 style="color:#2F80ED; margin-bottom: 10px;">{action} — D3NTAL TECH</h2>
-        <p style="color:#555; margin-top:0; margin-bottom: 20px;">
-            Un événement a été enregistré dans le calendrier D3NTAL TECH.
-        </p>
-
-        <table style="border-collapse: collapse; width: 100%; background-color:#fff;">
-            <tr>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #e0e0e0; background-color:#fafafa;">Champ</th>
-                <th style="text-align:left; padding:8px; border-bottom:1px solid #e0e0e0; background-color:#fafafa;">Valeur</th>
-            </tr>
-            <tr><td style="padding:8px;">Titre</td><td style="padding:8px;">{title}</td></tr>
-            <tr><td style="padding:8px;">Date</td><td style="padding:8px;">{event_date}</td></tr>
-            <tr><td style="padding:8px;">Heure</td><td style="padding:8px;">{event_time}</td></tr>
-            <tr><td style="padding:8px;">Type</td><td style="padding:8px;">{event_type}</td></tr>
-            <tr><td style="padding:8px;">Collaborateurs</td><td style="padding:8px;">{collaborators}</td></tr>
-            <tr><td style="padding:8px;">Priorité</td><td style="padding:8px;">{priority}</td></tr>
-            <tr><td style="padding:8px;">Notes</td><td style="padding:8px; white-space:pre-wrap;">{notes}</td></tr>
-            <tr><td style="padding:8px;">Créé / Modifié par</td><td style="padding:8px;">{user_email}</td></tr>
-        </table>
-
-        <p style="font-size:12px; color:#999; margin-top:20px;">
-            Notification automatique D3NTAL TECH — Merci de ne pas répondre à cet e-mail.
-        </p>
+    <div style="font-family: Arial; padding:20px;">
+    <h2 style="color:#2F80ED;">{action} — D3NTAL TECH</h2>
+    <table style="border-collapse:collapse;width:100%;">
+        <tr><td><b>Titre</b></td><td>{title}</td></tr>
+        <tr><td><b>Date</b></td><td>{event_date}</td></tr>
+        <tr><td><b>Heure</b></td><td>{event_time}</td></tr>
+        <tr><td><b>Type</b></td><td>{event_type}</td></tr>
+        <tr><td><b>Collaborateurs</b></td><td>{collaborators}</td></tr>
+        <tr><td><b>Priorité</b></td><td>{priority}</td></tr>
+        <tr><td><b>Notes</b></td><td>{notes}</td></tr>
+        <tr><td><b>Modifié par</b></td><td>{user_email}</td></tr>
+    </table>
     </div>
     """
     return html
 
 
-# ------------------------------------------------
-# UTILS DB & HASH
-# ------------------------------------------------
-def hash_password(plain_password: str) -> str:
-    to_hash = (SALT + plain_password).encode("utf-8")
-    return hashlib.sha256(to_hash).hexdigest()
+# -------- DB UTILS --------
+def hash_password(pwd: str):
+    return hashlib.sha256((SALT + pwd).encode()).hexdigest()
 
 
 def get_db_connection():
@@ -130,40 +100,31 @@ def force_init_db():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS authorized_users (
-            email TEXT PRIMARY KEY,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+    # users
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS authorized_users (
+        email TEXT PRIMARY KEY,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
 
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_email TEXT NOT NULL,
-            title TEXT NOT NULL,
-            event_date TEXT NOT NULL,
-            event_time TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            collaborators TEXT,
-            priority TEXT DEFAULT 'Normal',
-            notes TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+    # events
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_email TEXT NOT NULL,
+        title TEXT NOT NULL,
+        event_date TEXT NOT NULL,
+        event_time TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        collaborators TEXT,
+        priority TEXT DEFAULT 'Normal',
+        notes TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
 
-    # Ajout colonnes si absentes
-    try: cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
-    except: pass
-    try: cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
-    except: pass
-
-    # Comptes autorisés
     pwd = hash_password("D3ntalTech!@2025")
     for email in [
         "denismeuret01@gmail.com",
@@ -172,7 +133,7 @@ def force_init_db():
         "denismeuret@d3ntal-tech.fr",
     ]:
         cur.execute(
-            "INSERT OR REPLACE INTO authorized_users (email,password_hash) VALUES (?,?);",
+            "INSERT OR REPLACE INTO authorized_users VALUES (?,?)",
             (email, pwd),
         )
 
@@ -180,7 +141,8 @@ def force_init_db():
     conn.close()
 
 
-def check_credentials(email: str, password: str) -> bool:
+# -------- AUTH --------
+def check_credentials(email, password):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT password_hash FROM authorized_users WHERE email=?", (email,))
@@ -189,31 +151,16 @@ def check_credentials(email: str, password: str) -> bool:
     return row and row["password_hash"] == hash_password(password)
 
 
-def event_type_to_css(event_type: str) -> str:
-    t = (event_type or "").lower()
-    if "rendez" in t: return "rdv"
-    if "fournisseur" in t: return "rdv"
-    if "réunion" in t or "reunion" in t: return "reunion"
-    if "admin" in t: return "admin"
-    if "urgence" in t: return "urgence"
-    if "forma" in t: return "formation"
-    return "autre"
-
-
-# ------------------------------------------------
-# LOGIN
-# ------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
 def login():
     error = None
     if request.method == "POST":
-        email = (request.form.get("email") or "").strip()
-        password = request.form.get("password") or ""
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
         if check_credentials(email, password):
             session["user"] = email
             return redirect("/calendar")
-        else:
-            error = "Email ou mot de passe incorrect."
+        error = "Email ou mot de passe incorrect."
     return render_template("login.html", error=error)
 
 
@@ -223,17 +170,26 @@ def logout():
     return redirect("/")
 
 
-# ------------------------------------------------
-# CALENDRIER
-# ------------------------------------------------
+# -------- CALENDAR --------
+import calendar
+from datetime import date
+
+
+def event_type_to_css(t):
+    if "fourn" in t.lower(): return "rdv"
+    if "rendez" in t.lower(): return "rdv"
+    if "réunion" in t.lower(): return "reunion"
+    if "admin" in t.lower(): return "admin"
+    if "urgence" in t.lower(): return "urgence"
+    return "autre"
+
+
 @app.route("/calendar")
 def calendar_page():
     if "user" not in session:
         return redirect("/")
 
     now = datetime.now()
-    today = date.today()
-
     year = int(request.args.get("year", now.year))
     month = int(request.args.get("month", now.month))
 
@@ -248,57 +204,27 @@ def calendar_page():
 
     conn = get_db_connection()
     cur = conn.cursor()
-
-    # ÉVÉNEMENTS DU MOIS
-    cur.execute(
-        """
-        SELECT * FROM events
-        WHERE substr(event_date,1,4)=?
-        AND substr(event_date,6,2)=?
-        ORDER BY event_date,event_time;
-        """,
-        (str(year), f"{month:02d}"),
-    )
+    cur.execute("""
+    SELECT * FROM events
+    ORDER BY event_date,event_time;
+    """)
     rows = cur.fetchall()
+    conn.close()
 
     events_by_date = {}
     for r in rows:
         key = r["event_date"]
-        events_by_date.setdefault(key, []).append(
-            {
-                "id": r["id"],
-                "title": r["title"],
-                "date": r["event_date"],
-                "time": r["event_time"],
-                "type": r["event_type"],
-                "priority": r["priority"],
-                "notes": r["notes"],
-                "collaborators": r["collaborators"] or "",
-                "css_class": event_type_to_css(r["event_type"]),
-            }
-        )
-
-    # RÉCAP
-    month_summary = {}
-    for r in rows:
-        d_iso = r["event_date"]
-        month_summary.setdefault(d_iso, {"date": date.fromisoformat(d_iso), "events": []})
-        month_summary[d_iso]["events"].append(
-            {
-                "time": r["event_time"],
-                "type": r["event_type"],
-                "title": r["title"],
-                "collab": r["collaborators"],
-                "priority": r["priority"],
-                "notes": r["notes"],
-            }
-        )
-
-    conn.close()
-
-    last_day = calendar.monthrange(year, month)[1]
-    month_start = date(year, month, 1)
-    month_end = date(year, month, last_day)
+        events_by_date.setdefault(key, []).append({
+            "id": r["id"],
+            "title": r["title"],
+            "date": r["event_date"],
+            "time": r["event_time"],
+            "type": r["event_type"],
+            "priority": r["priority"],
+            "notes": r["notes"],
+            "collaborators": r["collaborators"],
+            "css_class": event_type_to_css(r["event_type"]),
+        })
 
     return render_template(
         "calendar.html",
@@ -310,66 +236,45 @@ def calendar_page():
         prev_year=prev_year,
         next_month=next_month,
         next_year=next_year,
-        current_day=today,
+        current_day=date.today(),
         events_by_date=events_by_date,
-        week_summary=month_summary,
-        week_start=month_start,
-        week_end=month_end,
+        week_summary={},  # not used here
+        week_start=date(year, month, 1),
+        week_end=date(year, month, calendar.monthrange(year, month)[1]),
     )
 
 
-# ------------------------------------------------
-# API EVENTS + EMAILS
-# ------------------------------------------------
+# -------- API (ADD/UPDATE/DELETE) --------
 @app.route("/api/add_event", methods=["POST"])
 def api_add_event():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
-    data = request.get_json() or {}
-    title = (data.get("title") or "").strip()
-    event_date = data.get("event_date") or ""
-    event_time = data.get("event_time") or ""
-    event_type = data.get("event_type") or ""
-    collaborators = (data.get("collaborators") or "").strip()
-    priority = (data.get("priority") or "Normal").strip()
-    notes = (data.get("notes") or "").strip()
-
-    if not title or not event_date or not event_time or not event_type:
-        return jsonify({"status": "error"}), 400
+    data = request.get_json()
+    title = data["title"]
+    event_date = data["event_date"]
+    event_time = data["event_time"]
+    event_type = data["event_type"]
+    collaborators = data.get("collaborators", "")
+    priority = data.get("priority", "Normal")
+    notes = data.get("notes", "")
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(
-        """
+    cur.execute("""
         INSERT INTO events 
         (user_email,title,event_date,event_time,event_type,collaborators,priority,notes)
-        VALUES (?,?,?,?,?,?,?,?);
-        """,
-        (
-            session["user"],
-            title,
-            event_date,
-            event_time,
-            event_type,
-            collaborators,
-            priority,
-            notes,
-        ),
-    )
+        VALUES (?,?,?,?,?,?,?,?)
+    """, (
+        session["user"], title, event_date, event_time,
+        event_type, collaborators, priority, notes
+    ))
     conn.commit()
     conn.close()
 
     html = build_event_email(
-        "Nouvel événement",
-        title,
-        event_date,
-        event_time,
-        event_type,
-        collaborators,
-        priority,
-        notes,
-        session["user"],
+        "Nouvel événement", title, event_date, event_time,
+        event_type, collaborators, priority, notes, session["user"]
     )
     send_event_email("D3NTAL TECH — Nouvel événement", html)
 
@@ -381,53 +286,34 @@ def api_update_event():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
-    data = request.get_json() or {}
-    event_id = data.get("event_id")
+    data = request.get_json()
+    event_id = data["event_id"]
 
-    if not event_id:
-        return jsonify({"status": "error"}), 400
-
-    title = (data.get("title") or "").strip()
-    event_date = data.get("event_date") or ""
-    event_time = data.get("event_time") or ""
-    event_type = data.get("event_type") or ""
-    collaborators = (data.get("collaborators") or "").strip()
-    priority = (data.get("priority") or "Normal").strip()
-    notes = (data.get("notes") or "").strip()
+    title = data["title"]
+    event_date = data["event_date"]
+    event_time = data["event_time"]
+    event_type = data["event_type"]
+    collaborators = data.get("collaborators", "")
+    priority = data.get("priority", "Normal")
+    notes = data.get("notes", "")
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(
-        """
-        UPDATE events
-        SET title=?,event_date=?,event_time=?,event_type=?,collaborators=?,priority=?,notes=?
-        WHERE id=? AND user_email=?;
-        """,
-        (
-            title,
-            event_date,
-            event_time,
-            event_type,
-            collaborators,
-            priority,
-            notes,
-            event_id,
-            session["user"],
-        ),
-    )
+    cur.execute("""
+    UPDATE events SET
+      title=?,event_date=?,event_time=?,event_type=?,
+      collaborators=?,priority=?,notes=?
+    WHERE id=? AND user_email=?
+    """, (
+        title, event_date, event_time, event_type,
+        collaborators, priority, notes, event_id, session["user"]
+    ))
     conn.commit()
     conn.close()
 
     html = build_event_email(
-        "Événement modifié",
-        title,
-        event_date,
-        event_time,
-        event_type,
-        collaborators,
-        priority,
-        notes,
-        session["user"],
+        "Événement modifié", title, event_date, event_time,
+        event_type, collaborators, priority, notes, session["user"]
     )
     send_event_email("D3NTAL TECH — Événement modifié", html)
 
@@ -439,19 +325,12 @@ def api_delete_event():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
-    data = request.get_json() or {}
-    event_id = data.get("event_id")
-
-    if not event_id:
-        return jsonify({"status": "error"}), 400
+    data = request.get_json()
+    event_id = data["event_id"]
 
     conn = get_db_connection()
     cur = conn.cursor()
-
-    cur.execute(
-        "SELECT * FROM events WHERE id=? AND user_email=?;",
-        (event_id, session["user"]),
-    )
+    cur.execute("SELECT * FROM events WHERE id=? AND user_email=?", (event_id, session["user"]))
     row = cur.fetchone()
 
     if row:
@@ -468,21 +347,73 @@ def api_delete_event():
         )
         send_event_email("D3NTAL TECH — Événement supprimé", html)
 
-    cur.execute(
-        "DELETE FROM events WHERE id=? AND user_email=?;",
-        (event_id, session["user"]),
-    )
+    cur.execute("DELETE FROM events WHERE id=? AND user_email=?", (event_id, session["user"]))
     conn.commit()
     conn.close()
 
     return jsonify({"status": "success"})
 
 
-# ------------------------------------------------
-# MAIN
-# ------------------------------------------------
+# -------- EXPORT PDF PRO --------
+@app.route("/export_pdf")
+def export_pdf():
+    if "user" not in session:
+        return redirect("/")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM events ORDER BY event_date,event_time;")
+    rows = cur.fetchall()
+    conn.close()
+
+    out_path = "/var/data/export_events.pdf"
+    doc = SimpleDocTemplate(out_path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Logo + bandeau bleu
+    logo_path = "static/logo.png"
+    if os.path.exists(logo_path):
+        story.append(Image(logo_path, width=140, height=40))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph("<b><font size=16 color='#2F80ED'>Récapitulatif des événements — D3NTAL TECH</font></b>", styles["Title"]))
+    story.append(Spacer(1, 20))
+
+    data = [["Date", "Heure", "Titre", "Type", "Collaborateurs", "Priorité", "Notes"]]
+
+    for r in rows:
+        data.append([
+            r["event_date"],
+            r["event_time"],
+            r["title"],
+            r["event_type"],
+            r["collaborators"] or "",
+            r["priority"],
+            r["notes"],
+        ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2F80ED")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+
+        ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
+        ('GRID', (0,0), (-1,-1), 0.25, colors.gray),
+        ('FONTSIZE', (0,1), (-1,-1), 9),
+    ]))
+
+    story.append(table)
+    doc.build(story)
+
+    return send_file(out_path, as_attachment=True, download_name="evenements_d3ntaltech.pdf")
+
+
+# -------- MAIN --------
 if __name__ == "__main__":
     force_init_db()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 force_init_db()
