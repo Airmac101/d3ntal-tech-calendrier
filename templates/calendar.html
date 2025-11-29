@@ -2,55 +2,73 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Calendrier - D3NTAL TECH</title>
+    <title>D3NTAL TECH - Calendrier</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}">
 </head>
+
 <body>
 
-<!-- TOPBAR -->
-<div class="topbar">
-    <div class="left-zone">
+    <!-- TOPBAR -->
+    <div class="topbar">
         <div class="topbar-title">D3NTAL TECH</div>
         <a class="topbar-logout" href="/logout">Déconnexion</a>
     </div>
-</div>
 
-<div class="container calendar-left">
+    <!-- CONTAINER -->
+    <div class="container">
 
-    <h1>Calendrier - D3NTAL TECH</h1>
+        <!-- NAVIGATION CALENDRIER -->
+        <div class="calendar-nav">
 
-    <div class="calendar-nav">
-        <a class="nav-btn" href="/calendar?year={{ prev_year }}&month={{ prev_month }}">← Mois précédent</a>
-        <h2>{{ month_name }} {{ year }}</h2>
-        <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
-    </div>
+            <a class="nav-btn" href="/calendar?year={{ prev_year }}&month={{ prev_month }}">← Mois précédent</a>
 
-    <table class="calendar">
-        <tr>
-            <th>Lun</th>
-            <th>Mar</th>
-            <th>Mer</th>
-            <th>Jeu</th>
-            <th>Ven</th>
-            <th>Sam</th>
-            <th>Dim</th>
-        </tr>
+            <h2>{{ month_name }} {{ year }}</h2>
 
-        {% for week in calendar_days %}
-        <tr>
-            {% for day in week %}
-            <td class="
-                {% if day.month != month %}other-month{% endif %}
-                {% if day == current_day %}today{% endif %}
-            ">
-                {{ day.day }}
-            </td>
+            <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
+        </div>
+
+        <!-- BOUTON AJOUT EVENEMENT -->
+        <div style="margin-top: 20px; text-align: right;">
+            <a href="#" class="nav-btn" style="background:#0a7cff; font-size:15px;">
+                + Ajouter un événement
+            </a>
+        </div>
+
+        <!-- TABLE CALENDRIER -->
+        <table class="calendar">
+            <tr>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+                <th>Dimanche</th>
+            </tr>
+
+            {% for week in calendar_days %}
+            <tr>
+                {% for day in week %}
+
+                {% set classes = [] %}
+                {% if day.month != month %}
+                    {% do classes.append("other-month") %}
+                {% endif %}
+                {% if day == current_day %}
+                    {% do classes.append("today") %}
+                {% endif %}
+
+                <td class="{{ ' '.join(classes) }}">
+                    {{ day.day }}
+                </td>
+
+                {% endfor %}
+            </tr>
             {% endfor %}
-        </tr>
-        {% endfor %}
-    </table>
 
-</div>
+        </table>
+
+    </div>
 
 </body>
 </html>
