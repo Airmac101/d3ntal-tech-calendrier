@@ -329,3 +329,20 @@ html, body {
 .context-item:hover {
     background: #e8ecf7;
 }
+
+.btn-export {
+    background: white;
+    border: 2px solid #2F80ED;
+    color: #2F80ED;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    margin-right: 10px;
+    transition: 0.2s;
+}
+
+.btn-export:hover {
+    background: #2F80ED;
+    color: white;
+}
