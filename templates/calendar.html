@@ -63,6 +63,8 @@
                          data-event-date="{{ ev.date }}"
                          data-event-time="{{ ev.time }}"
                          data-event-type="{{ ev.type }}"
+                         data-event-priority="{{ ev.priority }}"
+                         data-event-notes="{{ ev.notes }}"
                          data-event-collaborators="{{ ev.collaborators }}">
                         <div class="event-line">
                             <span class="event-time">{{ ev.time }}</span>
@@ -81,6 +83,44 @@
             </tr>
             {% endfor %}
         </table>
+
+        <!-- RÉCAPITULATIF HEBDOMADAIRE -->
+        <div class="weekly-summary-box">
+            <h3>Récapitulatif de la semaine : 
+                {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}
+            </h3>
+
+            <div class="weekly-summary-list">
+                {% for day_key, d in week_summary.items() %}
+                    <div class="week-line">
+                        <span class="week-day">
+                            {{ d.date.strftime('%A %d %B').capitalize() }} :
+                        </span>
+
+                        {% if d.events|length == 0 %}
+                            <span class="week-none">—</span>
+                        {% else %}
+                            {% for ev in d.events %}
+                                <span class="week-event">
+                                    <span class="priority priority-{{ ev.priority|lower }}">
+                                        [{{ ev.priority|upper }}]
+                                    </span>
+                                    {{ ev.time }} — {{ ev.type }} — {{ ev.title }}
+                                    {% if ev.collab %}
+                                        ({{ ev.collab }})
+                                    {% endif %}
+                                    {% if ev.notes %}
+                                        — <em>{{ ev.notes }}</em>
+                                    {% endif %}
+                                </span>
+                                {% if not loop.last %} | {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
     </div>
 
     <!-- MODALE AJOUT / EDIT -->
@@ -116,6 +156,18 @@
 
             <input id="eventCollaboratorsOther" type="text" placeholder="Autre collaborateur" style="display:none;">
 
+            <!-- PRIORITÉ -->
+            <select id="eventPriority">
+                <option value="Normal" selected>Normal</option>
+                <option value="Urgent">Urgent</option>
+                <option value="Important">Important</option>
+                <option value="Critique">Critique</option>
+            </select>
+
+            <!-- NOTES / INFORMATIONS SUPPLÉMENTAIRES -->
+            <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..."
+                      class="notes-textarea"></textarea>
+
             <button id="saveEventBtn">Enregistrer</button>
             <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
         </div>
@@ -132,6 +184,8 @@
         const timeInput = document.getElementById("eventTime");
         const typeSelect = document.getElementById("eventType");
         const typeCustomInput = document.getElementById("eventTypeCustom");
+        const prioritySelect = document.getElementById("eventPriority");
+        const notesInput = document.getElementById("eventNotes");
 
         const collabOtherCheckbox = document.getElementById("collabOtherCheckbox");
         const collabOtherInput = document.getElementById("eventCollaboratorsOther");
@@ -141,14 +195,7 @@
 
         let editingEventId = null;
 
-        // Affiche le picker natif au clic (si dispo)
-        if (dateInput && dateInput.showPicker) {
-            dateInput.addEventListener("click", () => dateInput.showPicker());
-        }
-        if (timeInput && timeInput.showPicker) {
-            timeInput.addEventListener("click", () => timeInput.showPicker());
-        }
-
+        // Reset
         function resetModal() {
             editingEventId = null;
             document.getElementById("modalTitle").innerText = "Ajouter un événement";
@@ -162,30 +209,29 @@
             typeCustomInput.style.display = "none";
             typeCustomInput.value = "";
 
+            prioritySelect.value = "Normal";
+            notesInput.value = "";
+
             document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+            collabOtherCheckbox.checked = false;
             collabOtherInput.style.display = "none";
             collabOtherInput.value = "";
-            collabOtherCheckbox.checked = false;
         }
 
-        // OUVERTURE MODALE (ajout)
+        // Open Modal
         openModalBtn.onclick = (e) => {
             e.preventDefault();
             resetModal();
             modalOverlay.style.display = "flex";
         };
 
-        // FERMETURE
-        closeModalBtn.onclick = () => {
-            modalOverlay.style.display = "none";
-        };
+        // Close Modal
+        closeModalBtn.onclick = () => modalOverlay.style.display = "none";
         modalOverlay.onclick = (e) => {
-            if (e.target === modalOverlay) {
-                modalOverlay.style.display = "none";
-            }
+            if (e.target === modalOverlay) modalOverlay.style.display = "none";
         };
 
-        // TYPE "Autre"
+        // Type "Autre"
         typeSelect.onchange = () => {
             if (typeSelect.value === "Autre") {
                 typeCustomInput.style.display = "block";
@@ -195,30 +241,27 @@
             }
         };
 
-        // COLLAB "Autre"
+        // Collab "Autre"
         collabOtherCheckbox.onchange = () => {
-            if (collabOtherCheckbox.checked) {
-                collabOtherInput.style.display = "block";
-            } else {
-                collabOtherInput.style.display = "none";
-                collabOtherInput.value = "";
-            }
+            collabOtherInput.style.display =
+                collabOtherCheckbox.checked ? "block" : "none";
+            if (!collabOtherCheckbox.checked) collabOtherInput.value = "";
         };
 
-        // CLICK SUR UN ÉVÉNEMENT = EDIT
-        document.querySelectorAll(".event-badge").forEach(badge => {
-            badge.onclick = () => {
-                editingEventId = badge.dataset.eventId;
+        // Click on event → EDIT
+        document.querySelectorAll(".event-badge").forEach(b => {
+            b.onclick = () => {
+                editingEventId = b.dataset.eventId;
                 document.getElementById("modalTitle").innerText = "Modifier l’événement";
                 saveBtn.textContent = "Mettre à jour";
                 deleteBtn.style.display = "block";
                 modalOverlay.style.display = "flex";
 
-                titleInput.value = badge.dataset.eventTitle || "";
-                dateInput.value = badge.dataset.eventDate || "";
-                timeInput.value = badge.dataset.eventTime || "";
+                titleInput.value = b.dataset.eventTitle || "";
+                dateInput.value = b.dataset.eventDate || "";
+                timeInput.value = b.dataset.eventTime || "";
 
-                const type = badge.dataset.eventType || "";
+                const type = b.dataset.eventType || "";
                 const known = [
                     "Rendez-vous patient",
                     "Réunion interne",
@@ -230,82 +273,71 @@
                 if (known.includes(type)) {
                     typeSelect.value = type;
                     typeCustomInput.style.display = "none";
-                    typeCustomInput.value = "";
-                } else if (type) {
+                } else {
                     typeSelect.value = "Autre";
                     typeCustomInput.style.display = "block";
                     typeCustomInput.value = type;
-                } else {
-                    typeSelect.value = "Rendez-vous patient";
-                    typeCustomInput.style.display = "none";
-                    typeCustomInput.value = "";
                 }
 
-                // Reset collabs
+                // PRIORITÉ
+                prioritySelect.value = b.dataset.eventPriority || "Normal";
+
+                // NOTES
+                notesInput.value = b.dataset.eventNotes || "";
+
+                // Collaborateurs
                 document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+                collabOtherCheckbox.checked = false;
                 collabOtherInput.style.display = "none";
                 collabOtherInput.value = "";
-                collabOtherCheckbox.checked = false;
 
-                const raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim()).filter(v => v);
-                let others = [];
+                const raw = (b.dataset.eventCollaborators || "").split(",").map(v => v.trim());
+                let rest = [];
 
-                raw.forEach(val => {
-                    const lower = val.toLowerCase();
-                    if (lower.includes("denis")) {
-                        document.querySelector('input[value="Denis"]').checked = true;
-                    } else if (lower.includes("isis")) {
-                        document.querySelector('input[value="Isis"]').checked = true;
-                    } else if (lower.includes("assist")) {
-                        document.querySelector('input[value="Assistante"]').checked = true;
-                    } else {
-                        others.push(val);
-                    }
+                raw.forEach(v => {
+                    let L = v.toLowerCase();
+                    if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
+                    else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
+                    else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
+                    else rest.push(v);
                 });
 
-                if (others.length > 0) {
+                if (rest.length > 0) {
                     collabOtherCheckbox.checked = true;
                     collabOtherInput.style.display = "block";
-                    collabOtherInput.value = others.join(", ");
+                    collabOtherInput.value = rest.join(", ");
                 }
             };
         });
 
-        // SAUVEGARDE (AJOUT / UPDATE)
+        // SAVE
         saveBtn.onclick = async () => {
+
+            // Collect Collaborators
             let collaborators = [];
             document.querySelectorAll(".collab-checkbox").forEach(cb => {
-                if (cb.checked && cb.value !== "__AUTRE__") {
-                    collaborators.push(cb.value);
-                }
+                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
             });
             if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
                 collaborators.push(collabOtherInput.value.trim());
             }
 
             let eventType = typeSelect.value;
-            if (eventType === "Autre") {
-                eventType = typeCustomInput.value.trim();
-            }
+            if (eventType === "Autre") eventType = typeCustomInput.value.trim();
 
             const payload = {
                 title: titleInput.value.trim(),
                 event_date: dateInput.value,
                 event_time: timeInput.value,
                 event_type: eventType,
-                collaborators: collaborators.join(", ")
+                collaborators: collaborators.join(", "),
+                priority: prioritySelect.value,
+                notes: notesInput.value.trim()
             };
 
-            if (!payload.title || !payload.event_date || !payload.event_time || !payload.event_type) {
-                alert("Veuillez remplir tous les champs.");
-                return;
-            }
+            if (editingEventId) payload.event_id = editingEventId;
 
-            let url = "/api/add_event";
-            if (editingEventId) {
-                payload.event_id = editingEventId;
-                url = "/api/update_event";
-            }
+            let url = editingEventId ? "/api/update_event" : "/api/add_event";
 
             const res = await fetch(url, {
                 method: "POST",
@@ -317,11 +349,11 @@
             if (data.status === "success") {
                 window.location.reload();
             } else {
-                alert("Erreur : " + (data.message || "inconnue"));
+                alert("Erreur lors de l’enregistrement.");
             }
         };
 
-        // SUPPRESSION
+        // DELETE
         deleteBtn.onclick = async () => {
             if (!editingEventId) return;
             if (!confirm("Supprimer cet événement ?")) return;
