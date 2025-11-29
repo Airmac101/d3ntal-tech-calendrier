@@ -182,7 +182,13 @@
                     <div class="day-number">{{ day.day }}</div>
 
                     {% for ev in day_events %}
-                    <div class="event-badge">
+                    <div class="event-badge"
+                         data-event-id="{{ ev.id }}"
+                         data-event-title="{{ ev.title }}"
+                         data-event-date="{{ day_key }}"
+                         data-event-time="{{ ev.time }}"
+                         data-event-type="{{ ev.type }}"
+                         data-event-collaborators="{{ ev.raw_collaborators }}">
                         <div class="event-line">
                             <span class="event-time">{{ ev.time }}</span>
                             <span class="event-title">{{ ev.title }}</span>
@@ -207,7 +213,7 @@
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box">
             <span class="close-btn" id="closeModalBtn">&times;</span>
-            <h3>Ajouter un événement</h3>
+            <h3 id="modalTitle">Ajouter un événement</h3>
 
             <div id="errorMessage"></div>
 
@@ -242,16 +248,20 @@
             <small>Exemples : jean@cabinet.fr, Sophie assistante...</small>
 
             <button id="saveEventBtn">Enregistrer</button>
+            <button id="deleteEventBtn" style="background:#b00020; display:none;">Supprimer l’événement</button>
         </div>
     </div>
 
     <!-- SCRIPT JS AJAX -->
     <script>
-        const openModal = document.getElementById("openModalBtn");
+        const openModalBtn = document.getElementById("openModalBtn");
         const closeModal = document.getElementById("closeModalBtn");
         const modalOverlay = document.getElementById("modalOverlay");
+        const modalTitle = document.getElementById("modalTitle");
 
         const saveBtn = document.getElementById("saveEventBtn");
+        const deleteBtn = document.getElementById("deleteEventBtn");
+
         const titleInput = document.getElementById("eventTitle");
         const dateInput = document.getElementById("eventDate");
         const timeInput = document.getElementById("eventTime");
@@ -264,6 +274,10 @@
 
         const successMessage = document.getElementById("successMessage");
         const errorMessage = document.getElementById("errorMessage");
+
+        const eventBadges = document.querySelectorAll(".event-badge");
+
+        let editingEventId = null;
 
         // --- GESTION TYPE "AUTRE" ---
         typeSelect.onchange = function () {
@@ -287,21 +301,111 @@
             };
         }
 
-        // --- OUVERTURE MODALE ---
-        openModal.onclick = function () {
+        // --- OUVERTURE MODALE EN MODE CREATION ---
+        function openCreateModal() {
+            editingEventId = null;
             modalOverlay.style.display = "flex";
             errorMessage.style.display = "none";
             errorMessage.innerText = "";
+
+            modalTitle.textContent = "Ajouter un événement";
+            saveBtn.textContent = "Enregistrer";
+            deleteBtn.style.display = "none";
+
             titleInput.value = "";
             dateInput.value = "";
             timeInput.value = "";
             typeSelect.value = "Rendez-vous patient";
             typeCustomInput.style.display = "none";
             typeCustomInput.value = "";
+
+            collabCheckboxes.forEach(cb => cb.checked = false);
             collabOtherInput.style.display = "none";
             collabOtherInput.value = "";
-            collabCheckboxes.forEach(cb => cb.checked = false);
+        }
+
+        openModalBtn.onclick = function () {
+            openCreateModal();
         };
+
+        // --- OUVERTURE MODALE EN MODE EDITION ---
+        function openEditModal(badge) {
+            editingEventId = badge.dataset.eventId;
+
+            modalOverlay.style.display = "flex";
+            errorMessage.style.display = "none";
+            errorMessage.innerText = "";
+
+            modalTitle.textContent = "Modifier l’événement";
+            saveBtn.textContent = "Mettre à jour";
+            deleteBtn.style.display = "block";
+
+            titleInput.value = badge.dataset.eventTitle || "";
+            dateInput.value = badge.dataset.eventDate || "";
+            timeInput.value = badge.dataset.eventTime || "";
+
+            const type = badge.dataset.eventType || "";
+            const optionValues = Array.from(typeSelect.options).map(o => o.value);
+            if (optionValues.includes(type)) {
+                typeSelect.value = type;
+                if (type === "Autre") {
+                    typeCustomInput.style.display = "block";
+                } else {
+                    typeCustomInput.style.display = "none";
+                    typeCustomInput.value = "";
+                }
+            } else {
+                typeSelect.value = "Autre";
+                typeCustomInput.style.display = "block";
+                typeCustomInput.value = type;
+            }
+
+            // Collaborateurs
+            collabCheckboxes.forEach(cb => cb.checked = false);
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
+
+            const raw = (badge.dataset.eventCollaborators || "").split(",")
+                .map(s => s.trim())
+                .filter(Boolean);
+
+            let others = [];
+
+            raw.forEach(val => {
+                const lower = val.toLowerCase();
+                if (lower.includes("denis")) {
+                    collabCheckboxes.forEach(cb => {
+                        if (cb.value === "Denis") cb.checked = true;
+                    });
+                } else if (lower.includes("isis")) {
+                    collabCheckboxes.forEach(cb => {
+                        if (cb.value === "Isis") cb.checked = true;
+                    });
+                } else if (lower.includes("assist")) {
+                    collabCheckboxes.forEach(cb => {
+                        if (cb.value === "Assistante") cb.checked = true;
+                    });
+                } else {
+                    others.push(val);
+                }
+            });
+
+            if (others.length > 0) {
+                if (collabOtherCheckbox) collabOtherCheckbox.checked = true;
+                collabOtherInput.style.display = "block";
+                collabOtherInput.value = others.join(", ");
+            } else {
+                if (collabOtherCheckbox) collabOtherCheckbox.checked = false;
+                collabOtherInput.style.display = "none";
+                collabOtherInput.value = "";
+            }
+        }
+
+        eventBadges.forEach(b => {
+            b.onclick = function () {
+                openEditModal(b);
+            };
+        });
 
         // --- FERMETURE MODALE ---
         closeModal.onclick = function () {
@@ -314,7 +418,7 @@
             }
         };
 
-        // --- AJAX ---
+        // --- SAUVEGARDE (CREATE / UPDATE) ---
         saveBtn.onclick = async function () {
             const title = titleInput.value.trim();
             const date = dateInput.value;
@@ -337,9 +441,7 @@
                 if (cb.checked) {
                     if (cb.value === "__AUTRE__") {
                         const other = collabOtherInput.value.trim();
-                        if (other) {
-                            collaboratorsList.push(other);
-                        }
+                        if (other) collaboratorsList.push(other);
                     } else {
                         collaboratorsList.push(cb.value);
                     }
@@ -353,22 +455,33 @@
                 return;
             }
 
-            const response = await fetch("/api/add_event", {
+            const url = editingEventId ? "/api/update_event" : "/api/add_event";
+
+            const payload = {
+                title: title,
+                event_date: date,
+                event_time: time,
+                event_type: eventType,
+                collaborators: collaborators
+            };
+            if (editingEventId) {
+                payload.event_id = editingEventId;
+            }
+
+            const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title: title,
-                    event_date: date,
-                    event_time: time,
-                    event_type: eventType,
-                    collaborators: collaborators
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
 
             if (data.status === "success") {
                 modalOverlay.style.display = "none";
+
+                successMessage.textContent = editingEventId
+                    ? "Événement mis à jour !"
+                    : "Événement ajouté !";
 
                 successMessage.style.display = "block";
                 setTimeout(() => {
@@ -378,6 +491,35 @@
 
             } else {
                 errorMessage.innerText = data.message || "Erreur.";
+                errorMessage.style.display = "block";
+            }
+        };
+
+        // --- SUPPRESSION ---
+        deleteBtn.onclick = async function () {
+            if (!editingEventId) return;
+
+            const ok = window.confirm("Supprimer définitivement cet événement ?");
+            if (!ok) return;
+
+            const response = await fetch("/api/delete_event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ event_id: editingEventId })
+            });
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+                modalOverlay.style.display = "none";
+                successMessage.textContent = "Événement supprimé.";
+                successMessage.style.display = "block";
+                setTimeout(() => {
+                    successMessage.style.display = "none";
+                    window.location.reload();
+                }, 800);
+            } else {
+                errorMessage.innerText = data.message || "Erreur à la suppression.";
                 errorMessage.style.display = "block";
             }
         };
