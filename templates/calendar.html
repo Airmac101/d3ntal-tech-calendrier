@@ -134,15 +134,15 @@
             <!-- TITRE -->
             <input id="eventTitle" type="text" placeholder="Titre de l’événement">
 
-            <!-- DATE — version native, aucune icône, 100% cliquable -->
+            <!-- DATE -->
             <input id="eventDate" type="date">
 
-            <!-- HEURE — version native, aucune icône, 100% cliquable -->
+            <!-- HEURE -->
             <input id="eventTime" type="time">
 
             <!-- TYPE -->
             <select id="eventType">
-                <option value="Rendez-vous Client">Rendez-vous patient</option>
+                <option value="Rendez-vous Client">Rendez-vous Client</option>
                 <option value="Réunion interne">Réunion interne</option>
                 <option value="Administration">Administration</option>
                 <option value="Urgence cabinet">Urgence cabinet</option>
@@ -180,7 +180,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT JS -->
+    <!-- SCRIPT -->
     <script>
         const modalOverlay = document.getElementById("modalOverlay");
         const openModalBtn = document.getElementById("openModalBtn");
@@ -211,7 +211,7 @@
             titleInput.value = "";
             dateInput.value = "";
             timeInput.value = "";
-            typeSelect.value = "Rendez-vous patient";
+            typeSelect.value = "Rendez-vous Client";
             typeCustomInput.style.display = "none";
             typeCustomInput.value = "";
 
@@ -266,7 +266,7 @@
 
                 const type = b.dataset.eventType || "";
                 const known = [
-                    "Rendez-vous patient",
+                    "Rendez-vous Client",
                     "Réunion interne",
                     "Administration",
                     "Urgence cabinet",
