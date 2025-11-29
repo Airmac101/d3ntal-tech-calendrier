@@ -57,6 +57,7 @@
                     <div class="day-number">{{ day.day }}</div>
 
                     {% for ev in day_events %}
+                        {% set display_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
                     <div class="event-badge event-type-{{ ev.css_class }}"
                          data-event-id="{{ ev.id }}"
                          data-event-title="{{ ev.title }}"
@@ -67,7 +68,7 @@
                          data-event-notes="{{ ev.notes }}"
                          data-event-collaborators="{{ ev.collaborators }}">
                         <div class="event-line">
-                            <span class="event-time">{{ ev.time }}</span>
+                            <span class="event-time">{{ display_time }}</span>
                             <span class="event-title">{{ ev.title }}</span>
                         </div>
                         <div class="event-meta">
@@ -84,7 +85,7 @@
             {% endfor %}
         </table>
 
-        <!-- RÉCAP HEBDOMADAIRE -->
+        <!-- RÉCAPITULATIF HEBDOMADAIRE -->
         <div class="weekly-summary-box">
             <h3>Récapitulatif de la semaine :
                 {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}
@@ -101,11 +102,12 @@
                             <span class="week-none">—</span>
                         {% else %}
                             {% for ev in d.events %}
+                                {% set label_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
                                 <span class="week-event">
                                     <span class="priority priority-{{ ev.priority|lower }}">
                                         [{{ ev.priority|upper }}]
                                     </span>
-                                    {{ ev.time }} — {{ ev.type }} — {{ ev.title }}
+                                    {{ label_time }} — {{ ev.type }} — {{ ev.title }}
                                     {% if ev.collab %}
                                         ({{ ev.collab }})
                                     {% endif %}
@@ -140,9 +142,16 @@
             <!-- HEURE -->
             <input id="eventTime" type="time">
 
+            <!-- JOURNÉE ENTIÈRE -->
+            <label style="margin-top:8px; display:block;">
+                <input type="checkbox" id="allDayCheckbox">
+                Journée entière (sans préciser d’heure)
+            </label>
+
             <!-- TYPE -->
             <select id="eventType">
                 <option value="Rendez-vous Client">Rendez-vous Client</option>
+                <option value="Rendez-vous Fournisseur">Rendez-vous Fournisseur</option>
                 <option value="Réunion interne">Réunion interne</option>
                 <option value="Administration">Administration</option>
                 <option value="Urgence cabinet">Urgence cabinet</option>
@@ -189,6 +198,8 @@
         const titleInput = document.getElementById("eventTitle");
         const dateInput = document.getElementById("eventDate");
         const timeInput = document.getElementById("eventTime");
+        const allDayCheckbox = document.getElementById("allDayCheckbox");
+
         const typeSelect = document.getElementById("eventType");
         const typeCustomInput = document.getElementById("eventTypeCustom");
         const prioritySelect = document.getElementById("eventPriority");
@@ -202,6 +213,23 @@
 
         let editingEventId = null;
 
+        // Ouvrir le picker natif sur clic dans les champs
+        if (dateInput && dateInput.showPicker) {
+            dateInput.addEventListener("click", () => dateInput.showPicker());
+        }
+        if (timeInput && timeInput.showPicker) {
+            timeInput.addEventListener("click", () => timeInput.showPicker());
+        }
+
+        // Gestion journée entière → désactiver/activer champ heure
+        allDayCheckbox.addEventListener("change", () => {
+            if (allDayCheckbox.checked) {
+                timeInput.disabled = true;
+            } else {
+                timeInput.disabled = false;
+            }
+        });
+
         function resetModal() {
             editingEventId = null;
             document.getElementById("modalTitle").innerText = "Ajouter un événement";
@@ -211,6 +239,9 @@
             titleInput.value = "";
             dateInput.value = "";
             timeInput.value = "";
+            allDayCheckbox.checked = false;
+            timeInput.disabled = false;
+
             typeSelect.value = "Rendez-vous Client";
             typeCustomInput.style.display = "none";
             typeCustomInput.value = "";
@@ -264,9 +295,19 @@
                 dateInput.value = b.dataset.eventDate || "";
                 timeInput.value = b.dataset.eventTime || "";
 
+                // Re-déduire allDay depuis l'heure
+                if ((b.dataset.eventTime || "") === "00:00") {
+                    allDayCheckbox.checked = true;
+                    timeInput.disabled = true;
+                } else {
+                    allDayCheckbox.checked = false;
+                    timeInput.disabled = false;
+                }
+
                 const type = b.dataset.eventType || "";
                 const known = [
                     "Rendez-vous Client",
+                    "Rendez-vous Fournisseur",
                     "Réunion interne",
                     "Administration",
                     "Urgence cabinet",
@@ -320,10 +361,16 @@
             let eventType = typeSelect.value;
             if (eventType === "Autre") eventType = typeCustomInput.value.trim();
 
+            // Gestion heure / journée entière
+            let eventTimeValue = timeInput.value;
+            if (allDayCheckbox.checked) {
+                eventTimeValue = "00:00"; // convention journée entière
+            }
+
             const payload = {
                 title: titleInput.value.trim(),
                 event_date: dateInput.value,
-                event_time: timeInput.value,
+                event_time: eventTimeValue,
                 event_type: eventType,
                 collaborators: collaborators.join(", "),
                 priority: prioritySelect.value,
