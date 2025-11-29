@@ -14,7 +14,7 @@
 
 <div class="calendar-container">
 
-    <!-- NAVIGATION DU CALENDRIER (FIXÉE) -->
+    <!-- NAVIGATION FIXÉE (version stable d'origine + ajout du bouton PDF) -->
     <div class="calendar-nav">
 
         <!-- Mois précédent -->
@@ -22,18 +22,18 @@
             ← Mois précédent
         </a>
 
-        <!-- Nom du mois -->
+        <!-- Titre central -->
         <h2 class="month-title">{{ month_name }} {{ year }}</h2>
 
-        <!-- Boutons à droite -->
+        <!-- Zone actions à droite -->
         <div class="calendar-actions">
 
-            <!-- Export PDF -->
+            <!-- Bouton Export PDF (Premium Notion) -->
             <a href="/export_pdf" class="btn-export">
                 📄 Export PDF
             </a>
 
-            <!-- Ajouter un événement -->
+            <!-- Ajouter événement -->
             <button id="addEventBtn" class="btn-add">
                 + Ajouter un événement
             </button>
@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <!-- TABLEAU DU CALENDRIER -->
+    <!-- TABLEAU DU CALENDRIER (inchangé, version stable) -->
     <table class="calendar-table">
         <thead>
             <tr>
@@ -66,7 +66,7 @@
                 {% for d in week %}
                     <td class="day-cell {% if d == current_day %}today{% endif %}"
                         data-date="{{ d }}">
-                        
+
                         <div class="day-number">{{ d.day }}</div>
 
                         {% if events_by_date[d.isoformat()] %}
@@ -90,7 +90,7 @@
 
 </div>
 
-<!-- RÉCAPITULATIF DU MOIS -->
+<!-- RÉCAPITULATIF DU MOIS (inchangé) -->
 <div class="summary-container">
     <h3>Récapitulatif du mois : {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}</h3>
 
@@ -116,6 +116,7 @@
     {% endif %}
 </div>
 
+<!-- JS du calendrier -->
 <script src="/static/calendar.js"></script>
 
 </body>
