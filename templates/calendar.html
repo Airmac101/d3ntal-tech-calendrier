@@ -4,6 +4,97 @@
     <meta charset="UTF-8">
     <title>D3NTAL TECH - Calendrier</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}">
+
+    <style>
+        /* ---- MODALE ---- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.55);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-box {
+            background: white;
+            width: 420px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            text-align: left;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .modal-box h3 {
+            margin-top: 0;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            color: #1a3d8f;
+        }
+
+        .close-btn {
+            float: right;
+            margin-top: -10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .modal-box input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            border: 1px solid #aaa;
+            border-radius: 6px;
+        }
+
+        .modal-box button {
+            margin-top: 18px;
+            width: 100%;
+            padding: 12px;
+            background: #1a3d8f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #successMessage {
+            margin-top: 15px;
+            background: #d3f5d3;
+            padding: 12px;
+            border-radius: 6px;
+            color: #2a6b2a;
+            display: none;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #errorMessage {
+            margin-top: 15px;
+            background: #ffd2d2;
+            padding: 12px;
+            border-radius: 6px;
+            color: #a11;
+            display: none;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+
 </head>
 
 <body>
@@ -19,7 +110,6 @@
 
         <!-- NAVIGATION CALENDRIER -->
         <div class="calendar-nav">
-
             <a class="nav-btn" href="/calendar?year={{ prev_year }}&month={{ prev_month }}">← Mois précédent</a>
 
             <h2>{{ month_name }} {{ year }}</h2>
@@ -27,9 +117,12 @@
             <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
         </div>
 
+        <!-- MESSAGE SUCCES -->
+        <div id="successMessage">Événement ajouté !</div>
+
         <!-- BOUTON AJOUT EVENEMENT -->
         <div style="margin-top: 20px; text-align: right;">
-            <a href="#" class="nav-btn" style="background:#0a7cff; font-size:15px;">
+            <a href="#" id="openModalBtn" class="nav-btn" style="background:#0a7cff;font-size:15px;">
                 + Ajouter un événement
             </a>
         </div>
@@ -49,7 +142,6 @@
             {% for week in calendar_days %}
             <tr>
                 {% for day in week %}
-
                 {% set is_other = (day.month != month) %}
                 {% set is_today = (day == current_day) %}
 
@@ -59,14 +151,96 @@
                 ">
                     {{ day.day }}
                 </td>
-
                 {% endfor %}
             </tr>
             {% endfor %}
-
         </table>
 
     </div>
+
+    <!-- MODALE (POPUP) -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h3>Ajouter un événement</h3>
+
+            <div id="errorMessage"></div>
+
+            <input id="eventTitle" type="text" placeholder="Titre de l’événement">
+            <input id="eventDate" type="date">
+
+            <button id="saveEventBtn">Enregistrer</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT JS AJAX -->
+    <script>
+        const openModal = document.getElementById("openModalBtn");
+        const closeModal = document.getElementById("closeModalBtn");
+        const modalOverlay = document.getElementById("modalOverlay");
+
+        const saveBtn = document.getElementById("saveEventBtn");
+        const titleInput = document.getElementById("eventTitle");
+        const dateInput = document.getElementById("eventDate");
+
+        const successMessage = document.getElementById("successMessage");
+        const errorMessage = document.getElementById("errorMessage");
+
+        // --- OUVERTURE MODALE ---
+        openModal.onclick = function () {
+            modalOverlay.style.display = "flex";
+            errorMessage.style.display = "none";
+            titleInput.value = "";
+            dateInput.value = "";
+        };
+
+        // --- FERMETURE MODALE ---
+        closeModal.onclick = function () {
+            modalOverlay.style.display = "none";
+        };
+
+        modalOverlay.onclick = function (e) {
+            if (e.target === modalOverlay) {
+                modalOverlay.style.display = "none";
+            }
+        };
+
+        // --- AJAX ---
+        saveBtn.onclick = async function () {
+            const title = titleInput.value.trim();
+            const date = dateInput.value;
+
+            if (!title || !date) {
+                errorMessage.innerText = "Veuillez remplir tous les champs.";
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            const response = await fetch("/api/add_event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: title,
+                    event_date: date
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+                modalOverlay.style.display = "none";
+
+                successMessage.style.display = "block";
+                setTimeout(() => {
+                    successMessage.style.display = "none";
+                }, 3000);
+
+            } else {
+                errorMessage.innerText = data.message || "Erreur.";
+                errorMessage.style.display = "block";
+            }
+        };
+    </script>
 
 </body>
 </html>
