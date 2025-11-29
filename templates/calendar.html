@@ -7,13 +7,15 @@
 </head>
 <body>
 
-<!-- BANDEAU HAUT DE PAGE -->
+<!-- TOPBAR -->
 <div class="topbar">
-    <div class="topbar-title">D3NTAL TECH</div>
-    <a class="topbar-logout" href="/logout">Déconnexion</a>
+    <div class="left-zone">
+        <div class="topbar-title">D3NTAL TECH</div>
+        <a class="topbar-logout" href="/logout">Déconnexion</a>
+    </div>
 </div>
 
-<div class="container">
+<div class="container calendar-left">
 
     <h1>Calendrier - D3NTAL TECH</h1>
 
@@ -35,18 +37,16 @@
         </tr>
 
         {% for week in calendar_days %}
-            <tr>
-                {% for day in week %}
-                    <td 
-                        class="
-                            {% if day.month != month %}other-month{% endif %}
-                            {% if day == current_day %}today{% endif %}
-                        "
-                    >
-                        {{ day.day }}
-                    </td>
-                {% endfor %}
-            </tr>
+        <tr>
+            {% for day in week %}
+            <td class="
+                {% if day.month != month %}other-month{% endif %}
+                {% if day == current_day %}today{% endif %}
+            ">
+                {{ day.day }}
+            </td>
+            {% endfor %}
+        </tr>
         {% endfor %}
     </table>
 
