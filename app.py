@@ -1,110 +1,96 @@
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+    jsonify,
+)
+import sqlite3
+import os
+import calendar
+from datetime import datetime, date, timedelta
+import hashlib
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+
 # ------------------------------------------------
-# UTILS DB & HASH
+# CONFIG FLASK
 # ------------------------------------------------
-def hash_password(plain_password: str) -> str:
-    to_hash = (SALT + plain_password).encode("utf-8")
-    return hashlib.sha256(to_hash).hexdigest()
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "SUPER_SECRET_KEY_D3NTAL_TECH_2025")
+
+DB_PATH = os.path.join("db", "database.db")
+SALT = "D3NTAL_TECH_SUPER_SALT_2025"
 
 
-def get_db_connection():
-    os.makedirs("db", exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+# ------------------------------------------------
+# EMAIL — UTILITAIRE GLOBAL
+# ------------------------------------------------
+def send_event_email(subject: str, html_content: str):
+    """
+    Envoie un email HTML aux destinataires fixes.
+    SMTP Gmail configuré dans Render.
+    """
 
+    smtp_server = os.environ.get("SMTP_SERVER")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
 
-def force_init_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS authorized_users (
-            email TEXT PRIMARY KEY,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
-
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_email TEXT NOT NULL,
-            title TEXT NOT NULL,
-            event_date TEXT NOT NULL,
-            event_time TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            collaborators TEXT,
-            priority TEXT DEFAULT 'Normal',
-            notes TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
-
-    try:
-        cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
-    except:
-        pass
-
-    try:
-        cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
-    except:
-        pass
-
-    pwd_hash = hash_password("D3ntalTech!@2025")
-    authorized_emails = [
-        "denismeuret01@gmail.com",
-        "isis.stouvenel@d3ntal-tech.fr",
-        "isis.42420@gmail.com",
+    recipients = [
         "denismeuret@d3ntal-tech.fr",
+        "isis.stouvenel@d3ntal-tech.fr"
     ]
 
-    for email in authorized_emails:
-        cur.execute(
-            """
-            INSERT OR REPLACE INTO authorized_users (email, password_hash)
-            VALUES (?, ?);
-            """,
-            (email, pwd_hash),
-        )
+    msg = MIMEMultipart("alternative")
+    msg["From"] = smtp_user
+    msg["To"] = ", ".join(recipients)
+    msg["Subject"] = subject
 
-    conn.commit()
-    conn.close()
+    msg.attach(MIMEText(html_content, "html"))
 
-
-def check_credentials(email: str, password: str) -> bool:
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT password_hash FROM authorized_users WHERE email = ?",
-        (email,),
-    )
-    row = cur.fetchone()
-    conn.close()
-
-    if not row:
-        return False
-    return row["password_hash"] == hash_password(password)
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.sendmail(smtp_user, recipients, msg.as_string())
+        server.quit()
+    except Exception as e:
+        print("EMAIL ERROR:", e)
 
 
-def event_type_to_css(event_type: str) -> str:
-    t = (event_type or "").lower()
-    if "rendez" in t or "client" in t:
-        return "rdv"
-    if "fournisseur" in t:
-        return "rdv"
-    if "réunion" in t or "reunion" in t:
-        return "reunion"
-    if "admin" in t:
-        return "admin"
-    if "urgence" in t:
-        return "urgence"
-    if "forma" in t:
-        return "formation"
-    return "autre"
+# ------------------------------------------------
+# EMAIL — TEMPLATES HTML
+# ------------------------------------------------
+def build_event_email(action, title, event_date, event_time, event_type, collaborators, priority, notes, user_email):
+    """
+    Crée un email HTML Notion-like.
+    """
+
+    html = f"""
+    <div style="font-family: Arial, sans-serif; padding:20px;">
+        <h2 style="color:#2F80ED;">{action} — D3NTAL TECH</h2>
+
+        <table style="border-collapse: collapse; width: 100%; margin-top: 20px;">
+            <tr><th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Champ</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Valeur</th></tr>
+
+            <tr><td style="padding:8px;">Titre</td><td>{title}</td></tr>
+            <tr><td style="padding:8px;">Date</td><td>{event_date}</td></tr>
+            <tr><td style="padding:8px;">Heure</td><td>{event_time}</td></tr>
+            <tr><td style="padding:8px;">Type</td><td>{event_type}</td></tr>
+            <tr><td style="padding:8px;">Collaborateurs</td><td>{collaborators}</td></tr>
+            <tr><td style="padding:8px;">Priorité</td><td>{priority}</td></tr>
+            <tr><td style="padding:8px;">Notes</td><td>{notes}</td></tr>
+            <tr><td style="padding:8px;">Créé / Modifié par</td><td>{user_email}</td></tr>
+        </table>
+    </div>
+    """
+
+    return html
 # ------------------------------------------------
 # UTILS DB & HASH
 # ------------------------------------------------
