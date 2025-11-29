@@ -178,6 +178,8 @@
 
             <input id="eventDate" type="date">
 
+            <input id="eventTime" type="time">
+
             <select id="eventType">
                 <option value="Rendez-vous patient">Rendez-vous patient</option>
                 <option value="Réunion équipe">Réunion équipe</option>
@@ -202,6 +204,7 @@
         const saveBtn = document.getElementById("saveEventBtn");
         const titleInput = document.getElementById("eventTitle");
         const dateInput = document.getElementById("eventDate");
+        const timeInput = document.getElementById("eventTime");
         const typeSelect = document.getElementById("eventType");
         const collaboratorsInput = document.getElementById("eventCollaborators");
 
@@ -215,6 +218,7 @@
             errorMessage.innerText = "";
             titleInput.value = "";
             dateInput.value = "";
+            timeInput.value = "";
             collaboratorsInput.value = "";
             typeSelect.value = "Rendez-vous patient";
         };
@@ -234,11 +238,12 @@
         saveBtn.onclick = async function () {
             const title = titleInput.value.trim();
             const date = dateInput.value;
+            const time = timeInput.value;
             const eventType = typeSelect.value;
             const collaborators = collaboratorsInput.value.trim();
 
-            if (!title || !date || !eventType) {
-                errorMessage.innerText = "Veuillez remplir au minimum le titre, la date et le type.";
+            if (!title || !date || !time || !eventType) {
+                errorMessage.innerText = "Veuillez remplir au minimum le titre, la date, l’heure et le type.";
                 errorMessage.style.display = "block";
                 return;
             }
@@ -249,6 +254,7 @@
                 body: JSON.stringify({
                     title: title,
                     event_date: date,
+                    event_time: time,
                     event_type: eventType,
                     collaborators: collaborators
                 })
