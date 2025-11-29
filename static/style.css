@@ -1,13 +1,37 @@
-/* Navigation buttons */
-.nav-btn {
-    padding: 10px 15px;
-    background: #1a3d8f;
-    color: white;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: bold;
+/* Large Professional Calendar */
+.calendar {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: fixed; /* force equal-size columns */
 }
 
-.nav-btn:hover {
-    background: #264fb5;
+.calendar td {
+    border: 1px solid #dee2e6;
+    height: 110px;             /* ← augmente la taille verticale des cases */
+    text-align: center;
+    vertical-align: top;
+    background: #ffffff;
+    font-size: 20px;           /* ← texte plus grand */
+    padding: 10px;
+    transition: 0.2s;
+}
+
+.calendar td:hover {
+    background: #e9f0ff;
+    cursor: pointer;
+    border-color: #1a3d8f;
+}
+
+/* Weekdays header */
+.calendar th {
+    background-color: #1a3d8f;
+    color: white;
+    padding: 12px;
+    font-size: 18px;
+}
+
+/* Align the calendar container wider */
+.container {
+    max-width: 900px;          /* ← élargit la zone principale */
 }
