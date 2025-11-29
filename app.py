@@ -1,78 +1,110 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+)
 import sqlite3
 import os
 import calendar
 from datetime import datetime, date
-import subprocess
+import hashlib
 
-# ---------------------------------------------------------
-# AUTO-INIT DATABASE (exécute init_db.py automatiquement)
-# ---------------------------------------------------------
-try:
-    subprocess.run(["python3", "init_db.py"], check=False)
-except:
-    pass
-# ---------------------------------------------------------
-
+# ------------------------------------------------
+# CONFIG FLASK
+# ------------------------------------------------
 app = Flask(__name__)
-app.secret_key = "supersecretkey123"
+app.secret_key = "SUPER_SECRET_KEY_D3NTAL_TECH_2025"
+
+DB_PATH = os.path.join("db", "database.db")
+SALT = "D3NTAL_TECH_SUPER_SALT_2025"  # doit être identique à init_db.py
 
 
-# ---------------------------------------------------------
-# Helper: connexion DB
-# ---------------------------------------------------------
-def get_db():
-    conn = sqlite3.connect("db/database.db")
+# ------------------------------------------------
+# UTILS DB & HASH
+# ------------------------------------------------
+def hash_password(plain_password: str) -> str:
+    """
+    Retourne le hash SHA256 du mot de passe avec le sel.
+    """
+    to_hash = (SALT + plain_password).encode("utf-8")
+    return hashlib.sha256(to_hash).hexdigest()
+
+
+def get_db_connection():
+    """
+    Retourne une connexion SQLite sur db/database.db.
+    """
+    os.makedirs("db", exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# ---------------------------------------------------------
-# PAGE LOGIN
-# ---------------------------------------------------------
+def check_credentials(email: str, password: str) -> bool:
+    """
+    Vérifie que l'email existe et que le mot de passe correspond.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT password_hash FROM authorized_users WHERE email = ?",
+        (email,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return False
+
+    stored_hash = row["password_hash"]
+    return stored_hash == hash_password(password)
+
+
+# ------------------------------------------------
+# ROUTE: LOGIN
+# ------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
 def login():
+    error = None
+
     if request.method == "POST":
-        email = request.form.get("email")
+        email = (request.form.get("email") or "").strip()
+        password = request.form.get("password") or ""
 
-        conn = get_db()
-        cur = conn.cursor()
-
-        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
-        user = cur.fetchone()
-
-        if user:
+        if check_credentials(email, password):
             session["user"] = email
             return redirect("/calendar")
         else:
-            flash("Email non autorisé.", "error")
+            error = "Email ou mot de passe incorrect."
 
-    return render_template("login.html")
+    return render_template("login.html", error=error)
 
 
-# ---------------------------------------------------------
-# LOGOUT
-# ---------------------------------------------------------
+# ------------------------------------------------
+# ROUTE: LOGOUT
+# ------------------------------------------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
 
-# ---------------------------------------------------------
-# PAGE CALENDAR (PROTÉGÉE)
-# ---------------------------------------------------------
+# ------------------------------------------------
+# ROUTE: CALENDRIER PROTÉGÉ
+# ------------------------------------------------
 @app.route("/calendar")
 def calendar_page():
     if "user" not in session:
         return redirect("/")
 
-    # paramètres mois/année
+    # Date actuelle
     now = datetime.now()
     year = int(request.args.get("year", now.year))
     month = int(request.args.get("month", now.month))
 
-    # calcul mois précédent / suivant
+    # Navigation mois précédent / suivant
     prev_month = month - 1
     prev_year = year
     if prev_month < 1:
@@ -85,10 +117,9 @@ def calendar_page():
         next_month = 1
         next_year += 1
 
-    # génération calendrier
-    cal = calendar.Calendar()
+    # Génération des jours du mois
+    cal = calendar.Calendar(firstweekday=0)  # 0 = lundi pour Python
     month_days = cal.monthdatescalendar(year, month)
-
     month_name = calendar.month_name[month]
 
     return render_template(
@@ -105,8 +136,14 @@ def calendar_page():
     )
 
 
-# ---------------------------------------------------------
-# RUN LOCAL (Render utilise gunicorn)
-# ---------------------------------------------------------
+# ------------------------------------------------
+# MAIN LOCAL
+# ------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Initialisation DB si nécessaire
+    if not os.path.exists(DB_PATH):
+        from init_db import init_db
+
+        init_db()
+
+    app.run(host="0.0.0.0", port=5000, debug=True)
