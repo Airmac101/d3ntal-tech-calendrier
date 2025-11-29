@@ -26,11 +26,8 @@
             <a class="nav-btn" href="/calendar?year={{ next_year }}&month={{ next_month }}">Mois suivant →</a>
         </div>
 
-        <!-- MESSAGE SUCCÈS -->
-        <div id="successMessage" style="display:none;">Succès !</div>
-
         <!-- BOUTON AJOUT -->
-        <div style="margin-top: 20px; text-align: right;">
+        <div class="add-wrapper">
             <a href="#" id="openModalBtn" class="nav-btn add-btn">
                 + Ajouter un événement
             </a>
@@ -53,35 +50,31 @@
                 {% for day in week %}
                 {% set is_other = (day.month != month) %}
                 {% set is_today = (day == current_day) %}
-                {% set d = day.day %}
-                {% set events = events_by_day.get(d, []) %}
+                {% set day_key = day.isoformat() %}
+                {% set day_events = events_by_date.get(day_key, []) %}
 
                 <td class="{% if is_other %}other-month{% endif %}{% if is_today %} today{% endif %}">
-
                     <div class="day-number">{{ day.day }}</div>
 
-                    {% for e in events %}
-                        {% set type_clean = e.event_type.lower().replace(' ', '').replace('é','e').replace('è','e').replace('ê','e') %}
-                        <div class="event-badge event-type-{{ type_clean }}"
-                             data-event-id="{{ e.id }}"
-                             data-event-title="{{ e.title }}"
-                             data-event-date="{{ e.event_date }}"
-                             data-event-time="{{ e.event_time }}"
-                             data-event-type="{{ e.event_type }}"
-                             data-event-collaborators="{{ e.collaborators }}">
-                            
-                            <div class="event-line">
-                                <span class="event-time">{{ e.event_time }}</span>
-                                <span class="event-title">{{ e.title }}</span>
-                            </div>
-
-                            <div class="event-meta">
-                                {{ e.event_type }}
-                                {% if e.collaborators %}
-                                    — {{ e.collaborators }}
-                                {% endif %}
-                            </div>
+                    {% for ev in day_events %}
+                    <div class="event-badge event-type-{{ ev.css_class }}"
+                         data-event-id="{{ ev.id }}"
+                         data-event-title="{{ ev.title }}"
+                         data-event-date="{{ ev.date }}"
+                         data-event-time="{{ ev.time }}"
+                         data-event-type="{{ ev.type }}"
+                         data-event-collaborators="{{ ev.collaborators }}">
+                        <div class="event-line">
+                            <span class="event-time">{{ ev.time }}</span>
+                            <span class="event-title">{{ ev.title }}</span>
                         </div>
+                        <div class="event-meta">
+                            {{ ev.type }}
+                            {% if ev.collaborators %}
+                                — {{ ev.collaborators }}
+                            {% endif %}
+                        </div>
+                    </div>
                     {% endfor %}
                 </td>
                 {% endfor %}
@@ -90,19 +83,16 @@
         </table>
     </div>
 
-    <!-- MODALE -->
+    <!-- MODALE AJOUT / EDIT -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box">
-
             <span class="close-btn" id="closeModalBtn">&times;</span>
             <h3 id="modalTitle">Ajouter un événement</h3>
 
             <div id="errorMessageModal" class="error" style="display:none;"></div>
 
             <input id="eventTitle" type="text" placeholder="Titre de l’événement">
-
             <input id="eventDate" type="date">
-
             <input id="eventTime" type="time">
 
             <select id="eventType">
@@ -128,13 +118,11 @@
 
             <button id="saveEventBtn">Enregistrer</button>
             <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
-
         </div>
     </div>
 
     <!-- SCRIPT JS -->
     <script>
-
         const modalOverlay = document.getElementById("modalOverlay");
         const openModalBtn = document.getElementById("openModalBtn");
         const closeModalBtn = document.getElementById("closeModalBtn");
@@ -153,13 +141,20 @@
 
         let editingEventId = null;
 
-        // XL : show picker on click
-        dateInput.addEventListener("click", () => dateInput.showPicker && dateInput.showPicker());
-        timeInput.addEventListener("click", () => timeInput.showPicker && timeInput.showPicker());
+        // Affiche le picker natif au clic (si dispo)
+        if (dateInput && dateInput.showPicker) {
+            dateInput.addEventListener("click", () => dateInput.showPicker());
+        }
+        if (timeInput && timeInput.showPicker) {
+            timeInput.addEventListener("click", () => timeInput.showPicker());
+        }
 
-        // RESET FORM
         function resetModal() {
             editingEventId = null;
+            document.getElementById("modalTitle").innerText = "Ajouter un événement";
+            saveBtn.textContent = "Enregistrer";
+            deleteBtn.style.display = "none";
+
             titleInput.value = "";
             dateInput.value = "";
             timeInput.value = "";
@@ -171,73 +166,101 @@
             collabOtherInput.style.display = "none";
             collabOtherInput.value = "";
             collabOtherCheckbox.checked = false;
-
-            deleteBtn.style.display = "none";
-            document.getElementById("modalTitle").innerText = "Ajouter un événement";
         }
 
-        // OPEN MODAL
+        // OUVERTURE MODALE (ajout)
         openModalBtn.onclick = (e) => {
             e.preventDefault();
             resetModal();
             modalOverlay.style.display = "flex";
         };
 
-        closeModalBtn.onclick = () => modalOverlay.style.display = "none";
-
+        // FERMETURE
+        closeModalBtn.onclick = () => {
+            modalOverlay.style.display = "none";
+        };
         modalOverlay.onclick = (e) => {
-            if (e.target === modalOverlay) modalOverlay.style.display = "none";
+            if (e.target === modalOverlay) {
+                modalOverlay.style.display = "none";
+            }
         };
 
-        // TYPE AUTRE
+        // TYPE "Autre"
         typeSelect.onchange = () => {
-            typeCustomInput.style.display = (typeSelect.value === "Autre") ? "block" : "none";
+            if (typeSelect.value === "Autre") {
+                typeCustomInput.style.display = "block";
+            } else {
+                typeCustomInput.style.display = "none";
+                typeCustomInput.value = "";
+            }
         };
 
-        // COLLAB AUTRE
+        // COLLAB "Autre"
         collabOtherCheckbox.onchange = () => {
-            collabOtherInput.style.display = collabOtherCheckbox.checked ? "block" : "none";
+            if (collabOtherCheckbox.checked) {
+                collabOtherInput.style.display = "block";
+            } else {
+                collabOtherInput.style.display = "none";
+                collabOtherInput.value = "";
+            }
         };
 
-        // EVENTS CLICK = EDIT
+        // CLICK SUR UN ÉVÉNEMENT = EDIT
         document.querySelectorAll(".event-badge").forEach(badge => {
             badge.onclick = () => {
-
                 editingEventId = badge.dataset.eventId;
-
                 document.getElementById("modalTitle").innerText = "Modifier l’événement";
+                saveBtn.textContent = "Mettre à jour";
                 deleteBtn.style.display = "block";
-
                 modalOverlay.style.display = "flex";
 
-                titleInput.value = badge.dataset.eventTitle;
-                dateInput.value = badge.dataset.eventDate;
-                timeInput.value = badge.dataset.eventTime;
+                titleInput.value = badge.dataset.eventTitle || "";
+                dateInput.value = badge.dataset.eventDate || "";
+                timeInput.value = badge.dataset.eventTime || "";
 
-                let type = badge.dataset.eventType;
-                const types_known = ["Rendez-vous patient","Réunion interne","Administration","Urgence cabinet","Formation"];
+                const type = badge.dataset.eventType || "";
+                const known = [
+                    "Rendez-vous patient",
+                    "Réunion interne",
+                    "Administration",
+                    "Urgence cabinet",
+                    "Formation"
+                ];
 
-                if (types_known.includes(type)) {
+                if (known.includes(type)) {
                     typeSelect.value = type;
                     typeCustomInput.style.display = "none";
                     typeCustomInput.value = "";
-                } else {
+                } else if (type) {
                     typeSelect.value = "Autre";
                     typeCustomInput.style.display = "block";
                     typeCustomInput.value = type;
+                } else {
+                    typeSelect.value = "Rendez-vous patient";
+                    typeCustomInput.style.display = "none";
+                    typeCustomInput.value = "";
                 }
 
+                // Reset collabs
                 document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+                collabOtherInput.style.display = "none";
+                collabOtherInput.value = "";
+                collabOtherCheckbox.checked = false;
 
-                let raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
+                const raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim()).filter(v => v);
                 let others = [];
 
-                raw.forEach(c => {
-                    const lower = c.toLowerCase();
-                    if (lower.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
-                    else if (lower.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
-                    else if (lower.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
-                    else others.push(c);
+                raw.forEach(val => {
+                    const lower = val.toLowerCase();
+                    if (lower.includes("denis")) {
+                        document.querySelector('input[value="Denis"]').checked = true;
+                    } else if (lower.includes("isis")) {
+                        document.querySelector('input[value="Isis"]').checked = true;
+                    } else if (lower.includes("assist")) {
+                        document.querySelector('input[value="Assistante"]').checked = true;
+                    } else {
+                        others.push(val);
+                    }
                 });
 
                 if (others.length > 0) {
@@ -248,15 +271,14 @@
             };
         });
 
-        // SAVE
+        // SAUVEGARDE (AJOUT / UPDATE)
         saveBtn.onclick = async () => {
-
             let collaborators = [];
-
             document.querySelectorAll(".collab-checkbox").forEach(cb => {
-                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
+                if (cb.checked && cb.value !== "__AUTRE__") {
+                    collaborators.push(cb.value);
+                }
             });
-
             if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
                 collaborators.push(collabOtherInput.value.trim());
             }
@@ -266,21 +288,20 @@
                 eventType = typeCustomInput.value.trim();
             }
 
-            let payload = {
+            const payload = {
                 title: titleInput.value.trim(),
                 event_date: dateInput.value,
                 event_time: timeInput.value,
                 event_type: eventType,
-                collaborators: collaborators.join(",")
+                collaborators: collaborators.join(", ")
             };
 
-            if (!payload.title || !payload.event_date || !payload.event_time) {
+            if (!payload.title || !payload.event_date || !payload.event_time || !payload.event_type) {
                 alert("Veuillez remplir tous les champs.");
                 return;
             }
 
             let url = "/api/add_event";
-
             if (editingEventId) {
                 payload.event_id = editingEventId;
                 url = "/api/update_event";
@@ -293,7 +314,6 @@
             });
 
             const data = await res.json();
-
             if (data.status === "success") {
                 window.location.reload();
             } else {
@@ -301,28 +321,24 @@
             }
         };
 
-        // DELETE
+        // SUPPRESSION
         deleteBtn.onclick = async () => {
-
             if (!editingEventId) return;
-
             if (!confirm("Supprimer cet événement ?")) return;
 
             const res = await fetch("/api/delete_event", {
                 method: "POST",
-                headers: {"Content-Type":"application/json"},
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ event_id: editingEventId })
             });
 
             const data = await res.json();
-
             if (data.status === "success") {
                 window.location.reload();
             } else {
                 alert("Erreur lors de la suppression.");
             }
         };
-
     </script>
 
 </body>
