@@ -5,7 +5,6 @@ from flask import (
     redirect,
     session,
     jsonify,
-    Response,
 )
 import sqlite3
 import os
@@ -15,8 +14,6 @@ import hashlib
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from io import StringIO
-import csv
 
 # ------------------------------------------------
 # CONFIG FLASK
@@ -161,14 +158,10 @@ def force_init_db():
     )
 
     # Ajout colonnes si absentes
-    try:
-        cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
-    except:
-        pass
-    try:
-        cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
-    except:
-        pass
+    try: cur.execute("ALTER TABLE events ADD COLUMN priority TEXT DEFAULT 'Normal';")
+    except: pass
+    try: cur.execute("ALTER TABLE events ADD COLUMN notes TEXT DEFAULT '';")
+    except: pass
 
     # Comptes autorisés
     pwd = hash_password("D3ntalTech!@2025")
@@ -198,18 +191,12 @@ def check_credentials(email: str, password: str) -> bool:
 
 def event_type_to_css(event_type: str) -> str:
     t = (event_type or "").lower()
-    if "rendez" in t:
-        return "rdv"
-    if "fournisseur" in t:
-        return "rdv"
-    if "réunion" in t or "reunion" in t:
-        return "reunion"
-    if "admin" in t:
-        return "admin"
-    if "urgence" in t:
-        return "urgence"
-    if "forma" in t:
-        return "formation"
+    if "rendez" in t: return "rdv"
+    if "fournisseur" in t: return "rdv"
+    if "réunion" in t or "reunion" in t: return "reunion"
+    if "admin" in t: return "admin"
+    if "urgence" in t: return "urgence"
+    if "forma" in t: return "formation"
     return "autre"
 
 
@@ -329,71 +316,6 @@ def calendar_page():
         week_start=month_start,
         week_end=month_end,
     )
-
-
-# ------------------------------------------------
-# EXPORT COMPLET DE TOUS LES ÉVÉNEMENTS (ALL CSV)
-# ------------------------------------------------
-@app.route("/export_all")
-def export_all():
-    """
-    Exporte en CSV tous les événements enregistrés dans la base,
-    toutes dates confondues.
-    """
-    if "user" not in session:
-        return redirect("/")
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT title, event_date, event_time, event_type,
-               collaborators, priority, notes, user_email
-        FROM events
-        ORDER BY event_date ASC, event_time ASC, title ASC;
-        """
-    )
-    rows = cur.fetchall()
-    conn.close()
-
-    output = StringIO()
-    writer = csv.writer(output, delimiter=";")
-
-    # En-têtes
-    writer.writerow(
-        [
-            "Titre",
-            "Date événement",
-            "Heure",
-            "Type",
-            "Collaborateurs",
-            "Priorité",
-            "Notes",
-            "Créé / modifié par",
-        ]
-    )
-
-    for r in rows:
-        writer.writerow(
-            [
-                r["title"],
-                r["event_date"],
-                r["event_time"],
-                r["event_type"],
-                r["collaborators"] or "",
-                r["priority"] or "",
-                (r["notes"] or "").replace("\n", " ").replace("\r", " "),
-                r["user_email"] or "",
-            ]
-        )
-
-    csv_content = output.getvalue()
-    filename = "recap_complet.csv"
-
-    response = Response(csv_content, mimetype="text/csv; charset=utf-8")
-    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-    return response
-
 
 
 # ------------------------------------------------
