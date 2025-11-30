@@ -332,18 +332,16 @@ def calendar_page():
 
 
 # ------------------------------------------------
-# EXPORT RÉCAPITULATIF JOUR (DATE SYSTÈME)
+# EXPORT COMPLET DE TOUS LES ÉVÉNEMENTS (ALL CSV)
 # ------------------------------------------------
-@app.route("/export_today")
-def export_today():
+@app.route("/export_all")
+def export_all():
     """
-    Exporte en CSV tous les événements dont la date d'événement
-    correspond à la date système (aujourd'hui).
+    Exporte en CSV tous les événements enregistrés dans la base,
+    toutes dates confondues.
     """
     if "user" not in session:
         return redirect("/")
-
-    today_iso = date.today().isoformat()
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -352,10 +350,8 @@ def export_today():
         SELECT title, event_date, event_time, event_type,
                collaborators, priority, notes, user_email
         FROM events
-        WHERE event_date = ?
-        ORDER BY event_time, title;
-        """,
-        (today_iso,),
+        ORDER BY event_date ASC, event_time ASC, title ASC;
+        """
     )
     rows = cur.fetchall()
     conn.close()
@@ -392,11 +388,12 @@ def export_today():
         )
 
     csv_content = output.getvalue()
-    filename = f"recap_{today_iso}.csv"
+    filename = "recap_complet.csv"
 
     response = Response(csv_content, mimetype="text/csv; charset=utf-8")
     response.headers["Content-Disposition"] = f"attachment; filename={filename}"
     return response
+
 
 
 # ------------------------------------------------
