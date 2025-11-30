@@ -11,12 +11,6 @@
     <!-- TOPBAR -->
     <div class="topbar">
         <div class="topbar-title">D3NTAL TECH</div>
-
-        <!-- AJOUT : BOUTON EXPORT ALL -->
-        <a class="nav-btn" href="{{ url_for('export_all') }}" style="margin-right: 20px;">
-            Exporter tous les récapitulatifs
-        </a>
-
         <a class="topbar-logout" href="/logout">Déconnexion</a>
     </div>
 
@@ -137,7 +131,6 @@
         </div>
 
     </div>
-
     <!-- MODALE AJOUT / EDIT -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box" id="modalBox">
@@ -232,6 +225,7 @@
 
         let editingEventId = null;
 
+        /* Forcer le picker natif */
         if (dateInput && dateInput.showPicker) {
             dateInput.addEventListener("click", () => dateInput.showPicker());
         }
@@ -241,6 +235,7 @@
             });
         }
 
+        /* Journée entière → désactiver l’heure */
         allDayCheckbox.addEventListener("change", () => {
             if (allDayCheckbox.checked) {
                 timeInput.disabled = true;
@@ -274,6 +269,7 @@
             collabOtherInput.value = "";
         }
 
+        /* Ouvrir la modale avec position dynamique */
         function openModalAt(x, y) {
             modalOverlay.style.display = "block";
 
@@ -283,11 +279,13 @@
             let left = x;
             let top = y;
 
+            /* Empêcher de sortir à droite */
             if (left + boxWidth > window.innerWidth - 20) {
                 left = window.innerWidth - boxWidth - 20;
             }
             if (left < 20) left = 20;
 
+            /* Empêcher de sortir en bas (TON OPTION A) */
             if (top + boxHeight > window.innerHeight - 20) {
                 top = window.innerHeight - boxHeight - 20;
             }
@@ -298,4 +296,277 @@
             modalBox.style.top = top + "px";
         }
 
+        function openAddEventModalForDate(dateStr, clickX, clickY) {
+            resetModal();
+            dateInput.value = dateStr || "";
+            openModalAt(clickX, clickY);
+        }
+        function openEditModalFromBadge(badge, clickX, clickY) {
+            editingEventId = badge.dataset.eventId;
+            document.getElementById("modalTitle").innerText = "Modifier l’événement";
+            saveBtn.textContent = "Mettre à jour";
+            deleteBtn.style.display = "block";
 
+            titleInput.value = badge.dataset.eventTitle || "";
+            dateInput.value = badge.dataset.eventDate || "";
+            timeInput.value = badge.dataset.eventTime || "";
+
+            /* Journée entière */
+            if ((badge.dataset.eventTime || "") === "00:00") {
+                allDayCheckbox.checked = true;
+                timeInput.disabled = true;
+            } else {
+                allDayCheckbox.checked = false;
+                timeInput.disabled = false;
+            }
+
+            /* Type */
+            const type = badge.dataset.eventType || "";
+            const known = [
+                "Rendez-vous Client",
+                "Rendez-vous Fournisseur",
+                "Réunion interne",
+                "Administration",
+                "Urgence cabinet",
+                "Formation"
+            ];
+            if (known.includes(type)) {
+                typeSelect.value = type;
+                typeSelect.dispatchEvent(new Event("change"));
+            } else {
+                typeSelect.value = "Autre";
+                typeSelect.dispatchEvent(new Event("change"));
+                typeCustomInput.value = type;
+            }
+
+            /* Priorité */
+            prioritySelect.value = badge.dataset.eventPriority || "Normal";
+
+            /* Notes */
+            notesInput.value = badge.dataset.eventNotes || "";
+
+            /* Collaborateurs */
+            document.querySelectorAll(".collab-checkbox").forEach(cb => cb.checked = false);
+            collabOtherCheckbox.checked = false;
+            collabOtherInput.style.display = "none";
+            collabOtherInput.value = "";
+
+            const raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
+            let rest = [];
+
+            raw.forEach(v => {
+                const L = v.toLowerCase();
+                if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
+                else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
+                else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
+                else if (v) rest.push(v);
+            });
+
+            if (rest.length > 0) {
+                collabOtherCheckbox.checked = true;
+                collabOtherInput.style.display = "block";
+                collabOtherInput.value = rest.join(", ");
+            }
+
+            openModalAt(clickX, clickY);
+        }
+
+        /* Bouton global Ajouter */
+        openModalBtn.onclick = (e) => {
+            e.preventDefault();
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 3;
+            resetModal();
+            openModalAt(centerX, centerY);
+        };
+
+        closeModalBtn.onclick = () => {
+            modalOverlay.style.display = "none";
+        };
+
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.style.display = "none";
+            }
+        };
+
+        /* Type = Autre → champ texte */
+        typeSelect.onchange = () => {
+            if (typeSelect.value === "Autre") {
+                typeCustomInput.style.display = "block";
+            } else {
+                typeCustomInput.style.display = "none";
+                typeCustomInput.value = "";
+            }
+        };
+
+        /* Collaborateur Autre */
+        collabOtherCheckbox.onchange = () => {
+            collabOtherInput.style.display =
+                collabOtherCheckbox.checked ? "block" : "none";
+            if (!collabOtherCheckbox.checked)
+                collabOtherInput.value = "";
+        };
+
+        /* Ancien comportement : clic sur badge = modifier */
+        document.querySelectorAll(".event-badge").forEach(b => {
+            b.onclick = (evt) => {
+                evt.stopPropagation();
+                const rect = b.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                openEditModalFromBadge(b, x, y);
+            };
+        });
+
+        /* MENU CONTEXTUEL */
+        function buildAndShowContextMenuForDayCell(td, clickX, clickY) {
+            const dateStr = td.dataset.date;
+            const badges = td.querySelectorAll(".event-badge");
+
+            let html = "";
+            html += `<div class="context-item" data-action="add" data-date="${dateStr}">➕ Ajouter un événement</div>`;
+
+            badges.forEach(b => {
+                const time = b.dataset.eventTime || "";
+                const type = b.dataset.eventType || "";
+                const title = b.dataset.eventTitle || "";
+                const labelTime = (time === "00:00") ? "Journée entière" : time;
+                const label = `✏️ Modifier : ${type} (${labelTime}) — ${title}`;
+                html += `<div class="context-item" data-action="edit" data-event-id="${b.dataset.eventId}" data-date="${dateStr}">${label}</div>`;
+            });
+
+            contextMenu.innerHTML = html;
+            contextMenu.style.display = "block";
+
+            let left = clickX;
+            let top = clickY;
+
+            const menuWidth = 260;
+            const menuHeight = 40 + 30 * badges.length;
+
+            if (left + menuWidth > window.innerWidth - 10)
+                left = window.innerWidth - menuWidth - 10;
+            if (top + menuHeight > window.innerHeight - 10)
+                top = window.innerHeight - menuHeight - 10;
+            if (left < 10) left = 10;
+            if (top < 10) top = 10;
+
+            contextMenu.style.left = left + "px";
+            contextMenu.style.top = top + "px";
+        }
+
+        /* Clic sur cellule → menu contextuel */
+        document.querySelectorAll(".calendar-day").forEach(td => {
+            td.addEventListener("click", (e) => {
+                if (e.target.closest(".event-badge")) {
+                    return;
+                }
+                e.stopPropagation();
+
+                const rect = td.getBoundingClientRect();
+                const x = e.clientX || (rect.left + rect.width / 2);
+                const y = e.clientY || (rect.top + rect.height / 2);
+
+                buildAndShowContextMenuForDayCell(td, x, y);
+            });
+        });
+
+        /* Actions depuis le menu contextuel */
+        contextMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const item = e.target.closest(".context-item");
+            if (!item) return;
+
+            const action = item.dataset.action;
+            const dateStr = item.dataset.date;
+            const eventId = item.dataset.eventId;
+
+            const rect = contextMenu.getBoundingClientRect();
+            const clickX = rect.left + rect.width / 2;
+            const clickY = rect.top + rect.height / 2;
+
+            contextMenu.style.display = "none";
+
+            if (action === "add") {
+                openAddEventModalForDate(dateStr, clickX, clickY);
+            } else if (action === "edit") {
+                const badge = document.querySelector(`.event-badge[data-event-id="${eventId}"]`);
+                if (badge) {
+                    openEditModalFromBadge(badge, clickX, clickY);
+                }
+            }
+        });
+
+        /* Fermer le menu contextuel en cliquant ailleurs */
+        document.addEventListener("click", () => {
+            contextMenu.style.display = "none";
+        });
+
+        /* Sauvegarde */
+        saveBtn.onclick = async () => {
+            let collaborators = [];
+            document.querySelectorAll(".collab-checkbox").forEach(cb => {
+                if (cb.checked && cb.value !== "__AUTRE__") collaborators.push(cb.value);
+            });
+            if (collabOtherCheckbox.checked && collabOtherInput.value.trim()) {
+                collaborators.push(collabOtherInput.value.trim());
+            }
+
+            let eventType = typeSelect.value;
+            if (eventType === "Autre") eventType = typeCustomInput.value.trim();
+
+            let eventTimeValue = timeInput.value;
+            if (allDayCheckbox.checked) eventTimeValue = "00:00";
+
+            const payload = {
+                title: titleInput.value.trim(),
+                event_date: dateInput.value,
+                event_time: eventTimeValue,
+                event_type: eventType,
+                collaborators: collaborators.join(", "),
+                priority: prioritySelect.value,
+                notes: notesInput.value.trim()
+            };
+
+            if (editingEventId) payload.event_id = editingEventId;
+
+            const url = editingEventId ? "/api/update_event" : "/api/add_event";
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de l’enregistrement.");
+            }
+        };
+
+        /* Suppression */
+        deleteBtn.onclick = async () => {
+            if (!editingEventId) return;
+            if (!confirm("Supprimer cet événement ?")) return;
+
+            const res = await fetch("/api/delete_event", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ event_id: editingEventId })
+            });
+
+            const data = await res.json();
+            if (data.status === "success") {
+                window.location.reload();
+            } else {
+                alert("Erreur lors de la suppression.");
+            }
+        };
+
+    </script>
+
+</body>
+</html>
