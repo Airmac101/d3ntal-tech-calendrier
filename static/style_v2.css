@@ -34,7 +34,6 @@ body {
     color: white;
     text-decoration: none;
     font-size: 16px;
-    font-weight: normal;
 }
 
 .topbar-logout:hover {
@@ -122,15 +121,14 @@ body {
 }
 
 /* ================================
-   ⬅️ AMÉLIORATION : JOUR D’AUJOURD’HUI
+   JOUR D’AUJOURD’HUI
 ================================ */
 .today {
-    background: #d9e4ff !important;   /* Bleu clair */
+    background: #d9e4ff !important;
     border: 3px solid #1a3d8f !important;
     box-shadow: inset 0 0 4px rgba(0,0,0,0.15);
 }
 
-/* Numéro du jour */
 .day-number {
     font-weight: bold;
     margin-bottom: 4px;
@@ -154,7 +152,6 @@ body {
     background: #dbe2ff;
 }
 
-/* Type couleur */
 .event-type-rdv { border-left-color: #2196F3; }
 .event-type-reunion { border-left-color: #673AB7; }
 .event-type-admin { border-left-color: #009688; }
@@ -174,7 +171,6 @@ body {
     color: #555;
 }
 
-/* Résumé fichiers dans les badges */
 .event-files-summary {
     margin-top: 4px;
     font-size: 13px;
@@ -182,7 +178,6 @@ body {
     color: #1a3d8f;
     display: flex;
     align-items: center;
-    gap: 4px;
 }
 
 /* ================================
@@ -204,7 +199,6 @@ body {
     color: #777;
 }
 
-/* Priorités */
 .priority {
     font-weight: bold;
 }
@@ -312,7 +306,7 @@ body {
 }
 
 /* ================================
-   FICHIERS JOINTS — MODAL & BADGES
+   FICHIERS JOINTS
 ================================ */
 .files-list {
     margin-top: 10px;
@@ -326,7 +320,6 @@ body {
 
 .file-item {
     margin-bottom: 6px;
-    font-size: 14px;
 }
 
 .file-item-link {
@@ -337,4 +330,34 @@ body {
 
 .file-item-link:hover {
     text-decoration: underline;
+}
+
+/* ================================
+   ALIGNEMENT COLLABORATEURS ✔
+================================ */
+.collab-title {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #1a3d8f;
+    margin-bottom: 6px;
+}
+
+.collab-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0 10px 0;
+}
+
+.collab-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+}
+
+.collab-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }
