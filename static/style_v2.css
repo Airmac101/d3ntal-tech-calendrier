@@ -121,8 +121,13 @@ body {
     color: #aaa;
 }
 
+/* ================================
+   ⬅️ AMÉLIORATION : JOUR D’AUJOURD’HUI
+================================ */
 .today {
-    border: 2px solid #4CAF50 !important;
+    background: #d9e4ff !important;   /* Bleu clair */
+    border: 3px solid #1a3d8f !important;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.15);
 }
 
 /* Numéro du jour */
