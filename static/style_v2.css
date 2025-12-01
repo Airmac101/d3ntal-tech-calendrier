@@ -34,6 +34,7 @@ body {
     color: white;
     text-decoration: none;
     font-size: 16px;
+    font-weight: normal;
 }
 
 .topbar-logout:hover {
@@ -178,6 +179,7 @@ body {
     color: #1a3d8f;
     display: flex;
     align-items: center;
+    gap: 4px;
 }
 
 /* ================================
@@ -320,6 +322,7 @@ body {
 
 .file-item {
     margin-bottom: 6px;
+    font-size: 14px;
 }
 
 .file-item-link {
@@ -333,7 +336,7 @@ body {
 }
 
 /* ================================
-   ALIGNEMENT COLLABORATEURS ✔
+   ✔ ALIGNEMENT COLLABORATEURS
 ================================ */
 .collab-title {
     margin-top: 10px;
