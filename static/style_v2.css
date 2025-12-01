@@ -1,331 +1,335 @@
-/* ===========================
-   GLOBAL
-=========================== */
-html, body {
+/* ================================
+   RESET
+================================ */
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+/* ================================
+   PAGE
+================================ */
+body {
     font-family: Arial, sans-serif;
-    background: #f0f4ff;
+    background-color: #f4f6ff;
+    color: #333;
 }
 
-/* ===========================
+/* ================================
    TOPBAR
-=========================== */
+================================ */
 .topbar {
-    width: 100%;
-    height: 60px;
-    background: #1a3d8f;
-    color: #ffffff;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    box-sizing: border-box;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-}
-
-.topbar-title {
+    align-items: center;
+    background-color: #1a3d8f;
+    color: white;
+    padding: 15px 25px;
     font-size: 20px;
     font-weight: bold;
 }
 
 .topbar-logout {
     color: white;
-    font-weight: bold;
-    font-size: 15px;
     text-decoration: none;
+    font-size: 16px;
+    font-weight: normal;
 }
 
-/* ===========================
-   CONTAINER CALENDRIER
-=========================== */
+.topbar-logout:hover {
+    text-decoration: underline;
+}
+
+/* ================================
+   CONTAINER
+================================ */
 .container {
-    width: 95%;
-    max-width: 1500px;
-    margin: 90px auto 40px auto;
-    background: white;
-    padding: 30px 35px;
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    padding: 25px;
 }
 
-/* ===========================
+/* ================================
    NAVIGATION CALENDRIER
-=========================== */
+================================ */
 .calendar-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.calendar-nav h2 {
-    margin: 0;
-    font-size: 24px;
-}
-
 .nav-btn {
-    background: #1a3d8f;
+    background-color: #1a3d8f;
     color: white;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 6px;
     text-decoration: none;
-}
-
-.add-wrapper {
-    margin-top: 16px;
-    text-align: right;
-}
-
-.add-btn {
-    background: #f39c12;
     font-size: 15px;
 }
 
-.add-btn:hover {
-    background: #d9820e;
+.nav-btn:hover {
+    background-color: #163270;
 }
 
-/* ===========================
+/* ================================
+   BOUTON AJOUT
+================================ */
+.add-wrapper {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.add-btn {
+    background-color: #4CAF50 !important;
+}
+
+.add-btn:hover {
+    background-color: #3f8c42 !important;
+}
+
+/* ================================
    TABLE CALENDRIER
-=========================== */
+================================ */
 .calendar {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 18px;
-    table-layout: fixed;
+    margin-top: 20px;
+    background: white;
 }
 
 .calendar th {
     background: #1a3d8f;
     color: white;
-    padding: 8px;
-    border: 1px solid #cfd5e6;
+    padding: 12px 0;
+    font-weight: bold;
+    text-align: center;
 }
 
 .calendar td {
-    border: 1px solid #cfd5e6;
+    border: 1px solid #d0d7f9;
+    height: 120px;
     vertical-align: top;
-    padding: 6px;
-    height: 90px;
-    background: white;
-
-    /* FIX CLICK — IMPORTANT */
-    cursor: pointer !important;
+    padding: 5px;
     position: relative;
-    pointer-events: auto !important;
-    z-index: 10;
 }
 
-/* Pour que l'intérieur du jour ne bloque pas le clic */
-.calendar-day * {
-    pointer-events: none;
-}
-
-/* Les événements restent cliquables */
-.event-badge {
-    pointer-events: auto !important;
-}
-
-.other-month {
-    background: #e8ecf7;
-    color: #777;
-}
-
-.today {
-    background: #bcd3ff;
-    border: 2px solid #1a3d8f;
-}
-
-.day-number {
-    font-weight: bold;
-    font-size: 15px;
-    margin-bottom: 4px;
-}
-
-/* ===========================
-   BADGES ÉVÉNEMENTS
-=========================== */
-.event-badge {
-    background: #eef3ff;
-    border-left: 4px solid #1a3d8f;
-    border-radius: 8px;
-    padding: 6px 7px;
-    margin-top: 4px;
+.calendar-day {
     cursor: pointer;
 }
 
+.other-month {
+    background: #f0f2fa;
+    color: #aaa;
+}
+
+.today {
+    border: 2px solid #4CAF50 !important;
+}
+
+/* Numéro du jour */
+.day-number {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+/* ================================
+   BADGES ÉVÉNEMENTS
+================================ */
+.event-badge {
+    background: #e9edff;
+    border-left: 4px solid #1a3d8f;
+    padding: 6px;
+    margin-top: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.15s ease;
+}
+
+.event-badge:hover {
+    background: #dbe2ff;
+}
+
+/* Type couleur */
+.event-type-rdv { border-left-color: #2196F3; }
+.event-type-reunion { border-left-color: #673AB7; }
+.event-type-admin { border-left-color: #009688; }
+.event-type-urgence { border-left-color: #f44336; }
+.event-type-formation { border-left-color: #FF9800; }
+.event-type-autre { border-left-color: #607D8B; }
+
 .event-line {
-    font-size: 15px;
     display: flex;
-    gap: 6px;
+    justify-content: space-between;
+    font-size: 13px;
     font-weight: bold;
 }
 
-/* ===========================
-   RÉCAPITULATIF MOIS
-=========================== */
-.weekly-summary-box {
-    background: white;
-    padding: 20px 25px;
-    margin-top: 35px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+.event-meta {
+    font-size: 12px;
+    color: #555;
 }
 
-.weekly-summary-box h3 {
-    margin-top: 0;
-    margin-bottom: 14px;
-    font-size: 20px;
+/* Résumé fichiers dans les badges */
+.event-files-summary {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: bold;
     color: #1a3d8f;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ================================
+   RÉCAP MOIS
+================================ */
+.weekly-summary-box {
+    margin-top: 30px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #d0d7f9;
 }
 
 .week-line {
-    font-size: 15px;
-    margin-bottom: 5px;
-}
-
-.week-day {
-    font-weight: bold;
-    color: #1a3d8f;
+    margin: 5px 0;
 }
 
 .week-none {
     color: #777;
-    font-style: italic;
 }
 
 /* Priorités */
-.priority { font-weight: bold; }
-.priority-urgent { color: red; }
-.priority-important { color: orange; }
-.priority-critique { color: green; }
-.priority-normal { color: black; }
+.priority {
+    font-weight: bold;
+}
 
-/* ===========================
+.priority-normal { color: #1a3d8f; }
+.priority-urgent { color: #f44336; }
+.priority-important { color: #FF9800; }
+.priority-critique { color: #b71c1c; }
+
+/* ================================
    MODALE
-=========================== */
+================================ */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.55);
     display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+    position: fixed;
+    z-index: 3000;
+    background: rgba(0,0,0,0.6);
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .modal-box {
-    background: white;
-    width: 540px;
-    max-width: 95%;
-    padding: 26px 28px;
-    border-radius: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    position: relative;
-}
-
-.modal-box h3 {
-    text-align: center;
-    margin: 0 0 15px 0;
-    font-size: 22px;
-    color: #1a3d8f;
-}
-
-/* INPUTS */
-.modal-box input[type=text],
-.modal-box input[type=date],
-.modal-box input[type=time],
-.modal-box select,
-.modal-box textarea {
-    width: 100%;
-    padding: 12px 13px;
-    margin-top: 10px;
-    border: 1px solid #888;
-    border-radius: 8px;
-    font-size: 15px;
-    box-sizing: border-box;
-    background-color: white;
-    cursor: pointer;
-}
-
-/* NOTES */
-.notes-textarea {
-    font-size: 11px;
-    color: #000;
-}
-
-/* COLLABORATEURS */
-.collab-title {
-    margin-top: 14px;
-    font-weight: bold;
-}
-
-.collab-group {
-    margin-top: 8px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 18px;
-}
-
-/* BOUTONS */
-.modal-box button {
-    margin-top: 16px;
-    width: 100%;
-    padding: 13px;
-    background: #1a3d8f;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.delete-btn {
-    background: #c62828 !important;
+    width: 480px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    position: absolute;
 }
 
 .close-btn {
-    position: absolute;
-    right: 16px;
-    top: 8px;
-    font-size: 26px;
+    float: right;
+    font-size: 22px;
     cursor: pointer;
 }
 
-/* ===========================
-   MENU CONTEXTUEL
-=========================== */
-.context-menu {
-    position: fixed;
-    background: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.20);
-    padding: 6px 0;
-    min-width: 260px;
-    z-index: 5000;
-    animation: fadeMenu 0.12s ease-out;
+.close-btn:hover {
+    color: red;
 }
 
-@keyframes fadeMenu {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
+.modal-box input,
+.modal-box select,
+.modal-box textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 15px;
+    border: 1px solid #d0d7f9;
+    border-radius: 6px;
+}
+
+.modal-box button {
+    margin-top: 12px;
+    width: 100%;
+    padding: 10px;
+    background: #1a3d8f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.modal-box button:hover {
+    background: #163270;
+}
+
+.delete-btn {
+    background: #e53935 !important;
+}
+
+.delete-btn:hover {
+    background: #c62828 !important;
+}
+
+/* ================================
+   CONTEXT MENU
+================================ */
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #d0d7f9;
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 4000;
+    display: none;
+    width: 260px;
+}
+
+.context-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #1a3d8f;
 }
 
 .context-item {
-    padding: 10px 14px;
-    font-size: 15px;
+    padding: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    user-select: none;
-    border-radius: 6px;
-    margin: 3px 6px;
 }
 
 .context-item:hover {
-    background: #e8ecf7;
+    background: #e8edff;
+}
+
+/* ================================
+   FICHIERS JOINTS — MODAL & BADGES
+================================ */
+.files-list {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f4f6ff;
+    border: 1px solid #d0d7f9;
+    border-radius: 8px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.file-item {
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.file-item-link {
+    color: #1a3d8f;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.file-item-link:hover {
+    text-decoration: underline;
 }
