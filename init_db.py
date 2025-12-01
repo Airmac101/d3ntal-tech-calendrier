@@ -1,71 +1,46 @@
 import sqlite3
+import json
 import os
-import hashlib
 
-DB_DIR = "db"
-DB_PATH = os.path.join(DB_DIR, "database.db")
+DB_NAME = "events.db"
 
-# Sel pour le hash (doit être identique à celui utilisé dans app.py)
-SALT = "D3NTAL_TECH_SUPER_SALT_2025"
-
-
-def hash_password(plain_password: str) -> str:
+def initialize_database():
     """
-    Retourne un hash sécurisé du mot de passe.
+    Initialise la base de données si elle n'existe pas encore
+    et ajoute la colonne 'files' si besoin.
     """
-    to_hash = (SALT + plain_password).encode("utf-8")
-    return hashlib.sha256(to_hash).hexdigest()
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
 
-
-def init_db():
-    """
-    Crée la base SQLite et la table authorized_users,
-    puis insère les utilisateurs autorisés avec le mot de passe hashé.
-    """
-    os.makedirs(DB_DIR, exist_ok=True)
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    # Table des utilisateurs autorisés
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS authorized_users (
-            email TEXT PRIMARY KEY,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    # Création de la table events si elle n'existe pas
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            event_time TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            collaborators TEXT,
+            priority TEXT,
+            notes TEXT,
+            user_email TEXT
         );
-        """
-    )
+    """)
 
-    # Mot de passe unique pour tous (hashé)
-    plain_password = "D3ntalTech!@2025"
-    pwd_hash = hash_password(plain_password)
+    # Vérification de l'existence de la colonne 'files'
+    cur.execute("PRAGMA table_info(events);")
+    columns = [row[1] for row in cur.fetchall()]
 
-    # Liste des emails autorisés
-    authorized_emails = [
-        "denismeuret01@gmail.com",
-        "isis.stouvenel@d3ntal-tech.fr",
-        "isis.42420@gmail.com",
-        "denismeuret@d3ntal-tech.fr",
-    ]
-
-    # Insertion / mise à jour
-    for email in authorized_emails:
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO authorized_users (email, password_hash)
-            VALUES (?, ?);
-            """,
-            (email, pwd_hash),
-        )
+    if "files" not in columns:
+        print("🟦 Ajout de la colonne 'files' dans la table events...")
+        cur.execute("ALTER TABLE events ADD COLUMN files TEXT;")
+    else:
+        print("✔ La colonne 'files' existe déjà.")
 
     conn.commit()
     conn.close()
-
-    print("✅ Base de données initialisée avec succès.")
-    print(f"📁 Emplacement : {DB_PATH}")
+    print("✔ Base de données initialisée avec succès.")
 
 
 if __name__ == "__main__":
-    init_db()
+    initialize_database()
