@@ -64,8 +64,8 @@ def initialize_database():
     default_users = [
         ("denismeuret01@gmail.com",       default_password),
         ("isis.stouvenel@d3ntal-tech.fr", default_password),
-        ("contact@d3ntal-tech.fr",        default_password),
-        ("admin@d3ntal-tech.fr",          default_password)
+        ("denismeuret@d3ntal-tech.fr",        default_password),
+        ("isis.42420@gmail.com",          default_password)
     ]
 
     for email, pwd in default_users:
