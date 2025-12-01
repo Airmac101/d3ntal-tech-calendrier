@@ -2,7 +2,7 @@ import os
 import json
 import sqlite3
 import smtplib
-from datetime import date
+from datetime import date, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -16,7 +16,7 @@ from flask import (
     send_from_directory,
 )
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = "CHANGE_ME"
 
 # ===============================
@@ -572,6 +572,62 @@ def download_file(rel_path):
     return send_from_directory(
         os.path.join(UPLOAD_BASE, folder), filename, as_attachment=True
     )
+
+
+# ===============================
+# DAILY REMINDER LOGIC
+# ===============================
+def send_daily_reminders():
+    """
+    Envoie un e-mail de rappel pour tous les événements prévus demain.
+    Utilise la même configuration SMTP et les mêmes destinataires que les autres notifications.
+    """
+    tomorrow = date.today() + timedelta(days=1)
+    tomorrow_str = tomorrow.isoformat()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM events WHERE event_date = ?", (tomorrow_str,))
+    rows = cur.fetchall()
+    conn.close()
+
+    if not rows:
+        print("DAILY REMINDER: aucun événement pour demain.")
+        return 0
+
+    count = 0
+    for row in rows:
+        html = build_event_email(
+            "Rappel : événement demain",
+            row["title"],
+            row["event_date"],
+            row["event_time"],
+            row["event_type"],
+            row["collaborators"],
+            row["priority"],
+            row["notes"],
+            row["user_email"],
+        )
+        subject = f"D3NTAL TECH — Rappel pour demain : {row['title']}"
+        send_event_email(subject, html)
+        count += 1
+
+    print(f"DAILY REMINDER: {count} rappel(s) envoyé(s) pour le {tomorrow_str}.")
+    return count
+
+
+@app.route("/internal/daily_reminder_job")
+def daily_reminder_job():
+    """
+    Route appelée par le cron Render une fois par jour.
+    Elle déclenche l'envoi des rappels d'événements pour le lendemain.
+    """
+    try:
+        sent = send_daily_reminders()
+        return jsonify({"status": "ok", "reminders_sent": sent})
+    except Exception as e:
+        print("DAILY REMINDER ERROR:", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # ===============================
