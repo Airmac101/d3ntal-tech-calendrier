@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>D3NTAL TECH - Calendrier</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_v3.css') }}?v=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_v3.css') }}?v=3">
 </head>
 
 <body>
@@ -28,7 +28,9 @@
 
         <!-- BOUTON AJOUT -->
         <div class="add-wrapper">
-            <a href="#" id="openModalBtn" class="nav-btn add-btn">+ Ajouter un événement</a>
+            <a href="#" id="openModalBtn" class="nav-btn add-btn">
+                + Ajouter un événement
+            </a>
         </div>
 
         <!-- TABLE CALENDRIER -->
@@ -43,49 +45,49 @@
                 <th>Dimanche</th>
             </tr>
 
-            {% for week in calendar %}
+            {% for week in calendar_days %}
             <tr>
                 {% for day in week %}
-                <td class="calendar-day {% if day.is_today %}today{% endif %} {% if not day.in_month %}other-month{% endif %}"
-                    data-date="{{ day.date }}">
+                {% set is_other = (day.month != month) %}
+                {% set is_today = (day == current_day) %}
+                {% set day_key = day.isoformat() %}
+                {% set day_events = events_by_date.get(day_key, []) %}
+
+                <td class="calendar-day{% if is_other %} other-month{% endif %}{% if is_today %} today{% endif %}"
+                    data-date="{{ day_key }}">
                     <div class="day-number">{{ day.day }}</div>
 
-                    {% for event in day.events %}
-                    <div class="event-badge event-type-{{ event.css_type }}"
-                        data-event-id="{{ event.id }}"
-                        data-event-title="{{ event.title }}"
-                        data-event-date="{{ event.event_date }}"
-                        data-event-time="{{ event.event_time }}"
-                        data-event-type="{{ event.event_type }}"
-                        data-event-priority="{{ event.priority }}"
-                        data-event-notes="{{ event.notes }}"
-                        data-event-collaborators="{{ event.collaborators }}"
-                        data-event-files='{{ event.files_json }}'>
-
+                    {% for ev in day_events %}
+                        {% set display_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
+                    <div class="event-badge event-type-{{ ev.css_class }}"
+                         data-event-id="{{ ev.id }}"
+                         data-event-title="{{ ev.title }}"
+                         data-event-date="{{ ev.date }}"
+                         data-event-time="{{ ev.time }}"
+                         data-event-type="{{ ev.type }}"
+                         data-event-priority="{{ ev.priority }}"
+                         data-event-notes="{{ ev.notes }}"
+                         data-event-collaborators="{{ ev.collaborators }}"
+                         data-event-files='{{ ev.files|default([])|tojson }}'>
                         <div class="event-line">
-                            <span class="event-time">
-                                {% if event.event_time == "00:00" %}
-                                    Journée entière
-                                {% else %}
-                                    {{ event.event_time }}
-                                {% endif %}
-                            </span>
-                            <span class="event-title">{{ event.title }}</span>
+                            <span class="event-time">{{ display_time }}</span>
+                            <span class="event-title">{{ ev.title }}</span>
                         </div>
-
                         <div class="event-meta">
-                            {{ event.event_type }}
-                            {% if event.collaborators %}
-                                — {{ event.collaborators }}
+                            {{ ev.type }}
+                            {% if ev.collaborators %}
+                                — {{ ev.collaborators }}
                             {% endif %}
                         </div>
-
-                        {% if event.files_count > 0 %}
-                        <div class="event-files-summary">
-                            📎 Pièces jointes ({{ event.files_count }})
-                        </div>
+                        {% set files = ev.files|default([]) %}
+                        {% if files %}
+                            {% set file_count = files|length %}
+                            {% if file_count > 0 %}
+                                <div class="event-files-summary">
+                                    📎 Pièces jointes ({{ file_count }})
+                                </div>
+                            {% endif %}
                         {% endif %}
-
                     </div>
                     {% endfor %}
                 </td>
@@ -97,45 +99,50 @@
         <!-- RÉCAPITULATIF DU MOIS -->
         <div class="weekly-summary-box">
             <h3>Récapitulatif du mois :
-                {{ month_start }} → {{ month_end }}
+                {{ week_start.strftime('%d/%m/%Y') }} → {{ week_end.strftime('%d/%m/%Y') }}
             </h3>
 
             <div class="weekly-summary-list">
-
-                {% for rec in recap %}
-                <div class="week-line">
-                    <span class="week-day">{{ rec.day_label }} :</span>
-
-                    {% if rec.events|length == 0 %}
-                        <span class="week-none">Aucun événement</span>
-                    {% else %}
-                        {% for ev in rec.events %}
-                        <span class="week-event">
-                            <span class="priority priority-{{ ev.priority|lower }}">
-                                [{{ ev.priority|upper }}]
+                {% if week_summary|length == 0 %}
+                    <div class="week-line">
+                        <span class="week-none">Aucun événement enregistré pour ce mois.</span>
+                    </div>
+                {% else %}
+                    {% for day_key, d in week_summary.items()|sort(attribute='1.date') %}
+                        <div class="week-line">
+                            <span class="week-day">
+                                {{ d.date.strftime('%A %d %B').capitalize() }} :
                             </span>
-                            {% if ev.time == "00:00" %}Journée entière{% else %}{{ ev.time }}{% endif %}
-                            — {{ ev.type }} — {{ ev.title }}
 
-                            {% if ev.collaborators %}
-                                ({{ ev.collaborators }})
+                            {% if d.events|length == 0 %}
+                                <span class="week-none">—</span>
+                            {% else %}
+                                {% for ev in d.events %}
+                                    {% set label_time = 'Journée entière' if ev.time == '00:00' else ev.time %}
+                                    <span class="week-event">
+                                        <span class="priority priority-{{ ev.priority|lower }}">
+                                            [{{ ev.priority|upper }}]
+                                        </span>
+                                        {{ label_time }} — {{ ev.type }} — {{ ev.title }}
+                                        {% if ev.collab %}
+                                            ({{ ev.collab }})
+                                        {% endif %}
+                                        {% if ev.notes %}
+                                            — <em>{{ ev.notes }}</em>
+                                        {% endif %}
+                                    </span>
+                                    {% if not loop.last %} | {% endif %}
+                                {% endfor %}
                             {% endif %}
-
-                            {% if ev.notes %}
-                                — <em>{{ ev.notes }}</em>
-                            {% endif %}
-                        </span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                {% endfor %}
-
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
 
-    </div> <!-- FIN container -->
+    </div>
 
-    <!-- MODALE AJOUT / ÉDITION -->
+    <!-- MODALE AJOUT / EDIT -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box" id="modalBox">
             <span class="close-btn" id="closeModalBtn">&times;</span>
@@ -176,25 +183,10 @@
 
             <div class="collab-group">
 
-                <label>
-                    <input type="checkbox" class="collab-checkbox" value="Denis">
-                    Denis
-                </label>
-
-                <label>
-                    <input type="checkbox" class="collab-checkbox" value="Isis">
-                    Isis
-                </label>
-
-                <label>
-                    <input type="checkbox" class="collab-checkbox" value="Assistante">
-                    Assistante
-                </label>
-
-                <label>
-                    <input type="checkbox" class="collab-checkbox" id="collabOtherCheckbox" value="__AUTRE__">
-                    Autre
-                </label>
+                <label><input type="checkbox" class="collab-checkbox" value="Denis"> Denis</label>
+                <label><input type="checkbox" class="collab-checkbox" value="Isis"> Isis</label>
+                <label><input type="checkbox" class="collab-checkbox" value="Assistante"> Assistante</label>
+                <label><input type="checkbox" class="collab-checkbox" id="collabOtherCheckbox" value="__AUTRE__"> Autre</label>
 
             </div>
 
@@ -209,12 +201,13 @@
             </select>
 
             <!-- NOTES -->
-            <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..." class="notes-textarea"></textarea>
+            <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..."
+                class="notes-textarea"></textarea>
 
-            <!-- FICHIERS EXISTANTS -->
+            <!-- FICHIERS JOINTS EXISTANTS -->
             <div id="existingFilesContainer" class="files-list" style="margin-top:8px; display:none;"></div>
 
-            <!-- AJOUT DE FICHIERS -->
+            <!-- AJOUT DE NOUVELLES PIÈCES JOINTES -->
             <label style="margin-top:8px; display:block;">
                 Pièces jointes :
                 <input id="eventFiles" type="file" multiple>
@@ -222,16 +215,16 @@
 
             <button id="saveEventBtn">Enregistrer</button>
             <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
-
         </div>
     </div>
 
     <!-- MENU CONTEXTUEL JOUR -->
     <div id="dayContextMenu" class="context-menu" style="display:none;"></div>
 
-    <!-- SCRIPT (inchangé) -->
+    <!-- SCRIPT JS — IDENTIQUE, NON MODIFIÉ -->
     <script>
-        /* Ton JS complet ici — je n’y touche pas*/
+        /* (script complet non modifié — le tien était correct) */
+        /* ... */
     </script>
 
 </body>
