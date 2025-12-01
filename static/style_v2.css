@@ -1,0 +1,366 @@
+/* ================================
+   RESET
+================================ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ================================
+   PAGE
+================================ */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6ff;
+    color: #333;
+}
+
+/* ================================
+   TOPBAR
+================================ */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a3d8f;
+    color: white;
+    padding: 15px 25px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.topbar-logout {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.topbar-logout:hover {
+    text-decoration: underline;
+}
+
+/* ================================
+   CONTAINER
+================================ */
+.container {
+    padding: 25px;
+}
+
+/* ================================
+   NAVIGATION CALENDRIER
+================================ */
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-btn {
+    background-color: #1a3d8f;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 15px;
+}
+
+.nav-btn:hover {
+    background-color: #163270;
+}
+
+/* ================================
+   BOUTON AJOUT
+================================ */
+.add-wrapper {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.add-btn {
+    background-color: #4CAF50 !important;
+}
+
+.add-btn:hover {
+    background-color: #3f8c42 !important;
+}
+
+/* ================================
+   TABLE CALENDRIER
+================================ */
+.calendar {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+}
+
+.calendar th {
+    background: #1a3d8f;
+    color: white;
+    padding: 12px 0;
+    font-weight: bold;
+    text-align: center;
+}
+
+.calendar td {
+    border: 1px solid #d0d7f9;
+    height: 120px;
+    vertical-align: top;
+    padding: 5px;
+    position: relative;
+}
+
+.calendar-day {
+    cursor: pointer;
+}
+
+.other-month {
+    background: #f0f2fa;
+    color: #aaa;
+}
+
+/* ================================
+   JOUR D’AUJOURD’HUI
+================================ */
+.today {
+    background: #d9e4ff !important;
+    border: 3px solid #1a3d8f !important;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.15);
+}
+
+.day-number {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+/* ================================
+   BADGES ÉVÉNEMENTS
+================================ */
+.event-badge {
+    background: #e9edff;
+    border-left: 4px solid #1a3d8f;
+    padding: 6px;
+    margin-top: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.15s ease;
+}
+
+.event-badge:hover {
+    background: #dbe2ff;
+}
+
+.event-type-rdv { border-left-color: #2196F3; }
+.event-type-reunion { border-left-color: #673AB7; }
+.event-type-admin { border-left-color: #009688; }
+.event-type-urgence { border-left-color: #f44336; }
+.event-type-formation { border-left-color: #FF9800; }
+.event-type-autre { border-left-color: #607D8B; }
+
+.event-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.event-meta {
+    font-size: 12px;
+    color: #555;
+}
+
+.event-files-summary {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #1a3d8f;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ================================
+   RÉCAP MOIS
+================================ */
+.weekly-summary-box {
+    margin-top: 30px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #d0d7f9;
+}
+
+.week-line {
+    margin: 5px 0;
+}
+
+.week-none {
+    color: #777;
+}
+
+.priority {
+    font-weight: bold;
+}
+
+.priority-normal { color: #1a3d8f; }
+.priority-urgent { color: #f44336; }
+.priority-important { color: #FF9800; }
+.priority-critique { color: #b71c1c; }
+
+/* ================================
+   MODALE
+================================ */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    z-index: 3000;
+    background: rgba(0,0,0,0.6);
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.modal-box {
+    width: 480px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    position: absolute;
+}
+
+.close-btn {
+    float: right;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: red;
+}
+
+.modal-box input,
+.modal-box select,
+.modal-box textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+    font-size: 15px;
+    border: 1px solid #d0d7f9;
+    border-radius: 6px;
+}
+
+.modal-box button {
+    margin-top: 12px;
+    width: 100%;
+    padding: 10px;
+    background: #1a3d8f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.modal-box button:hover {
+    background: #163270;
+}
+
+.delete-btn {
+    background: #e53935 !important;
+}
+
+.delete-btn:hover {
+    background: #c62828 !important;
+}
+
+/* ================================
+   CONTEXT MENU
+================================ */
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #d0d7f9;
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 4000;
+    display: none;
+    width: 260px;
+}
+
+.context-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #1a3d8f;
+}
+
+.context-item {
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.context-item:hover {
+    background: #e8edff;
+}
+
+/* ================================
+   FICHIERS JOINTS
+================================ */
+.files-list {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f4f6ff;
+    border: 1px solid #d0d7f9;
+    border-radius: 8px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.file-item {
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.file-item-link {
+    color: #1a3d8f;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.file-item-link:hover {
+    text-decoration: underline;
+}
+
+/* ================================
+   ✔ ALIGNEMENT COLLABORATEURS
+================================ */
+.collab-title {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #1a3d8f;
+    margin-bottom: 6px;
+}
+
+.collab-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0 10px 0;
+}
+
+.collab-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+}
+
+.collab-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
