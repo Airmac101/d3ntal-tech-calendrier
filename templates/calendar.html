@@ -67,7 +67,8 @@
                          data-event-type="{{ ev.type }}"
                          data-event-priority="{{ ev.priority }}"
                          data-event-notes="{{ ev.notes }}"
-                         data-event-collaborators="{{ ev.collaborators }}">
+                         data-event-collaborators="{{ ev.collaborators }}"
+                         data-event-files='{{ ev.files|default([])|tojson }}'>
                         <div class="event-line">
                             <span class="event-time">{{ display_time }}</span>
                             <span class="event-title">{{ ev.title }}</span>
@@ -78,6 +79,15 @@
                                 — {{ ev.collaborators }}
                             {% endif %}
                         </div>
+                        {% set files = ev.files|default([]) %}
+                        {% if files %}
+                            {% set file_count = files|length %}
+                            {% if file_count > 0 %}
+                                <div class="event-files-summary">
+                                    📎 Pièces jointes ({{ file_count }})
+                                </div>
+                            {% endif %}
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </td>
@@ -131,6 +141,7 @@
         </div>
 
     </div>
+
     <!-- MODALE AJOUT / EDIT -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box" id="modalBox">
@@ -190,6 +201,15 @@
             <textarea id="eventNotes" rows="6" placeholder="Informations supplémentaires..."
                 class="notes-textarea"></textarea>
 
+            <!-- FICHIERS JOINTS EXISTANTS -->
+            <div id="existingFilesContainer" class="files-list" style="margin-top:8px; display:none;"></div>
+
+            <!-- AJOUT DE NOUVELLES PIÈCES JOINTES -->
+            <label style="margin-top:8px; display:block;">
+                Pièces jointes :
+                <input id="eventFiles" type="file" multiple>
+            </label>
+
             <button id="saveEventBtn">Enregistrer</button>
             <button id="deleteEventBtn" class="delete-btn" style="display:none;">Supprimer</button>
         </div>
@@ -214,6 +234,8 @@
         const typeCustomInput = document.getElementById("eventTypeCustom");
         const prioritySelect = document.getElementById("eventPriority");
         const notesInput = document.getElementById("eventNotes");
+        const filesInput = document.getElementById("eventFiles");
+        const existingFilesContainer = document.getElementById("existingFilesContainer");
 
         const collabOtherCheckbox = document.getElementById("collabOtherCheckbox");
         const collabOtherInput = document.getElementById("eventCollaboratorsOther");
@@ -267,6 +289,14 @@
             collabOtherCheckbox.checked = false;
             collabOtherInput.style.display = "none";
             collabOtherInput.value = "";
+
+            if (filesInput) {
+                filesInput.value = "";
+            }
+            if (existingFilesContainer) {
+                existingFilesContainer.innerHTML = "";
+                existingFilesContainer.style.display = "none";
+            }
         }
 
         /* Ouvrir la modale avec position dynamique */
@@ -285,7 +315,7 @@
             }
             if (left < 20) left = 20;
 
-            /* Empêcher de sortir en bas (TON OPTION A) */
+            /* Empêcher de sortir en bas */
             if (top + boxHeight > window.innerHeight - 20) {
                 top = window.innerHeight - boxHeight - 20;
             }
@@ -301,6 +331,7 @@
             dateInput.value = dateStr || "";
             openModalAt(clickX, clickY);
         }
+
         function openEditModalFromBadge(badge, clickX, clickY) {
             editingEventId = badge.dataset.eventId;
             document.getElementById("modalTitle").innerText = "Modifier l’événement";
@@ -351,21 +382,61 @@
             collabOtherInput.style.display = "none";
             collabOtherInput.value = "";
 
-            const raw = (badge.dataset.eventCollaborators || "").split(",").map(v => v.trim());
+            const raw = (badge.dataset.eventCollaborators || "")
+                .split(",")
+                .map(v => v.trim());
             let rest = [];
 
             raw.forEach(v => {
                 const L = v.toLowerCase();
-                if (L.includes("denis")) document.querySelector('input[value="Denis"]').checked = true;
-                else if (L.includes("isis")) document.querySelector('input[value="Isis"]').checked = true;
-                else if (L.includes("assist")) document.querySelector('input[value="Assistante"]').checked = true;
-                else if (v) rest.push(v);
+                if (L.includes("denis")) {
+                    const elt = document.querySelector('input[value="Denis"]');
+                    if (elt) elt.checked = true;
+                } else if (L.includes("isis")) {
+                    const elt = document.querySelector('input[value="Isis"]');
+                    if (elt) elt.checked = true;
+                } else if (L.includes("assist")) {
+                    const elt = document.querySelector('input[value="Assistante"]');
+                    if (elt) elt.checked = true;
+                } else if (v) {
+                    rest.push(v);
+                }
             });
 
             if (rest.length > 0) {
                 collabOtherCheckbox.checked = true;
                 collabOtherInput.style.display = "block";
                 collabOtherInput.value = rest.join(", ");
+            }
+
+            // Affichage des pièces jointes existantes
+            if (existingFilesContainer) {
+                existingFilesContainer.innerHTML = "";
+                let files = [];
+                try {
+                    files = JSON.parse(badge.dataset.eventFiles || "[]");
+                } catch (e) {
+                    files = [];
+                }
+
+                if (files.length > 0) {
+                    existingFilesContainer.style.display = "block";
+                    files.forEach(f => {
+                        const fileName = f.split("/").pop();
+                        const link = document.createElement("a");
+                        link.href = "/download_file/" + encodeURIComponent(f);
+                        link.target = "_blank";
+                        link.textContent = "📎 " + fileName;
+                        link.className = "file-item-link";
+
+                        const wrapper = document.createElement("div");
+                        wrapper.className = "file-item";
+                        wrapper.appendChild(link);
+                        existingFilesContainer.appendChild(wrapper);
+                    });
+                } else {
+                    existingFilesContainer.style.display = "none";
+                }
             }
 
             openModalAt(clickX, clickY);
@@ -404,35 +475,37 @@
         collabOtherCheckbox.onchange = () => {
             collabOtherInput.style.display =
                 collabOtherCheckbox.checked ? "block" : "none";
-            if (!collabOtherCheckbox.checked)
+            if (!collabOtherCheckbox.checked) {
                 collabOtherInput.value = "";
+            }
         };
 
-        /* Ancien comportement : clic sur badge = modifier */
-        document.querySelectorAll(".event-badge").forEach(b => {
-            b.onclick = (evt) => {
-                evt.stopPropagation();
-                const rect = b.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = rect.top + rect.height / 2;
-                openEditModalFromBadge(b, x, y);
-            };
+        /* Clic sur badge = modifier */
+        document.querySelectorAll(".event-badge").forEach(badge => {
+            badge.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const rect = badge.getBoundingClientRect();
+                const x = e.clientX || (rect.left + rect.width / 2);
+                const y = e.clientY || (rect.top + rect.height / 2);
+                openEditModalFromBadge(badge, x, y);
+            });
         });
 
-        /* MENU CONTEXTUEL */
+        /* MENU CONTEXTUEL JOUR */
         function buildAndShowContextMenuForDayCell(td, clickX, clickY) {
             const dateStr = td.dataset.date;
             const badges = td.querySelectorAll(".event-badge");
 
             let html = "";
+            html += `<div class="context-title">Actions pour le ${dateStr}</div>`;
             html += `<div class="context-item" data-action="add" data-date="${dateStr}">➕ Ajouter un événement</div>`;
 
             badges.forEach(b => {
-                const time = b.dataset.eventTime || "";
-                const type = b.dataset.eventType || "";
                 const title = b.dataset.eventTitle || "";
-                const labelTime = (time === "00:00") ? "Journée entière" : time;
-                const label = `✏️ Modifier : ${type} (${labelTime}) — ${title}`;
+                const time = b.dataset.eventTime || "";
+                const label = time === "00:00"
+                    ? `Modifier : (Journée entière) — ${title}`
+                    : `Modifier : ${time} — ${title}`;
                 html += `<div class="context-item" data-action="edit" data-event-id="${b.dataset.eventId}" data-date="${dateStr}">${label}</div>`;
             });
 
@@ -541,6 +614,28 @@
 
             const data = await res.json();
             if (data.status === "success") {
+                // Après création ou mise à jour, si des fichiers sont sélectionnés, on les envoie
+                let eventIdForFiles = editingEventId;
+                if (!eventIdForFiles && data.event_id) {
+                    eventIdForFiles = data.event_id;
+                }
+
+                if (filesInput && filesInput.files && filesInput.files.length > 0 && eventIdForFiles) {
+                    const formData = new FormData();
+                    formData.append("event_id", eventIdForFiles);
+                    for (let i = 0; i < filesInput.files.length; i++) {
+                        formData.append("files", filesInput.files[i]);
+                    }
+                    try {
+                        await fetch("/upload_files", {
+                            method: "POST",
+                            body: formData
+                        });
+                    } catch (e) {
+                        console.error("Erreur upload fichiers", e);
+                    }
+                }
+
                 window.location.reload();
             } else {
                 alert("Erreur lors de l’enregistrement.");
@@ -565,7 +660,6 @@
                 alert("Erreur lors de la suppression.");
             }
         };
-
     </script>
 
 </body>
