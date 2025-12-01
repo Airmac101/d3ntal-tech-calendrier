@@ -10,7 +10,7 @@ def initialize_database():
     - Crée la table events
     - Ajoute la colonne files si absente
     - Crée la table authorized_users
-    - Ajoute les 4 comptes d'origine
+    - Ajoute les comptes utilisateurs par défaut
     """
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -42,7 +42,6 @@ def initialize_database():
     else:
         print("✔ Colonne 'files' déjà présente")
 
-
     # ==============================
     # TABLE AUTHORIZED_USERS
     # ==============================
@@ -57,14 +56,18 @@ def initialize_database():
     print("✔ Table authorized_users vérifiée")
 
     # ==============================
-    # AJOUT DES 4 COMPTES ORIGINAUX
+    # AJOUT DES COMPTES UTILISATEURS
     # ==============================
     default_password = "D3ntalTech!@2025"
 
     default_users = [
         ("denismeuret01@gmail.com",       default_password),
         ("isis.stouvenel@d3ntal-tech.fr", default_password),
-        ("denismeuret@d3ntal-tech.fr",        default_password),
+        ("contact@d3ntal-tech.fr",        default_password),
+        ("admin@d3ntal-tech.fr",          default_password),
+
+        # ➕ Nouveaux comptes demandés
+        ("denismeuret@d3ntal-tech.fr",    default_password),
         ("isis.42420@gmail.com",          default_password)
     ]
 
@@ -74,7 +77,7 @@ def initialize_database():
             VALUES (?, ?)
         """, (email, pwd))
 
-    print("✔ Comptes utilisateurs ajoutés (MDP original, sans doublons)")
+    print("✔ Comptes utilisateurs ajoutés / mis à jour")
 
     conn.commit()
     conn.close()
