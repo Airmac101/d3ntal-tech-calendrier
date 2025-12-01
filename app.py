@@ -16,7 +16,7 @@ from flask import (
     send_from_directory,
 )
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = "CHANGE_ME"
 
 # ===============================
