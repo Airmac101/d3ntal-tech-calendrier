@@ -1,18 +1,14 @@
 import sqlite3
-import json
 import os
 
 DB_NAME = "events.db"
 
+
 def initialize_database():
-    """
-    Initialise la base de données si elle n'existe pas encore
-    et ajoute la colonne 'files' si besoin.
-    """
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    # Création de la table events si elle n'existe pas
+    # EVENTS
     cur.execute("""
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,19 +23,38 @@ def initialize_database():
         );
     """)
 
-    # Vérification de l'existence de la colonne 'files'
+    # Add files column
     cur.execute("PRAGMA table_info(events);")
-    columns = [row[1] for row in cur.fetchall()]
-
+    columns = [c[1] for c in cur.fetchall()]
     if "files" not in columns:
-        print("🟦 Ajout de la colonne 'files' dans la table events...")
         cur.execute("ALTER TABLE events ADD COLUMN files TEXT;")
-    else:
-        print("✔ La colonne 'files' existe déjà.")
+
+    # USERS
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS authorized_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        );
+    """)
+
+    # 4 ACCOUNTS WITH ORIGINAL PASSWORD
+    default_users = [
+        ("denismeuret01@gmail.com",       "D3ntalTech!@2025"),
+        ("isis.stouvenel@d3ntal-tech.fr", "D3ntalTech!@2025"),
+        ("contact@d3ntal-tech.fr",        "D3ntalTech!@2025"),
+        ("admin@d3ntal-tech.fr",          "D3ntalTech!@2025")
+    ]
+
+    for email, pwd in default_users:
+        cur.execute("""
+            INSERT OR IGNORE INTO authorized_users (email, password)
+            VALUES (?, ?)
+        """, (email, pwd))
 
     conn.commit()
     conn.close()
-    print("✔ Base de données initialisée avec succès.")
+    print("✔ Base initialisée avec les 4 comptes d’origine (MDP correct).")
 
 
 if __name__ == "__main__":
