@@ -281,7 +281,7 @@ body {
    CONTEXT MENU
 ================================ */
 .context-menu {
-    position: absolute;
+    position: fixed;
     background: white;
     border: 1px solid #d0d7f9;
     border-radius: 6px;
@@ -336,7 +336,7 @@ body {
 }
 
 /* ================================
-   ✔ ALIGNEMENT COLLABORATEURS
+   ✔ ALIGNEMENT COLLABORATEURS (DÉFINITIF)
 ================================ */
 .collab-title {
     margin-top: 10px;
@@ -352,11 +352,11 @@ body {
     margin: 8px 0 12px 0;
 }
 
+/* Correction ABSOLUE — écrase tous les styles concurrents */
 .collab-group label {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
     font-size: 15px;
     color: #333;
 }
