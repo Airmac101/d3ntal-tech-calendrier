@@ -2,33 +2,35 @@ import os
 import json
 import sqlite3
 from datetime import date
-from flask import Flask, render_template, request, redirect, jsonify, session, send_from_directory, Response
+from flask import Flask, render_template, request, redirect, jsonify, session, send_from_directory
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_ME"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "events.db")
-UPLOAD_BASE = "/var/data/uploads"
+# ===============================
+# DATABASE USING RENDER DISK
+# ===============================
+DB_PATH = "/var/data/events.db"   # <- DISQUE PERSISTANT RENDER
+UPLOAD_BASE = "/var/data/uploads" # <- dossiers fichiers persistants
 
 
-# ============================================
+# ===============================
 # DATABASE CONNECTION
-# ============================================
+# ===============================
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# ============================================
-# INIT DATABASE (auto) — authorized_users + events + files
-# ============================================
+# ===============================
+# INITIALIZE DATABASE (AUTO)
+# ===============================
 def initialize_database():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # EVENTS table
+    # TABLE EVENTS
     cur.execute("""
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +51,7 @@ def initialize_database():
     if "files" not in columns:
         cur.execute("ALTER TABLE events ADD COLUMN files TEXT;")
 
-    # AUTHORIZED_USERS table
+    # TABLE authorized_users
     cur.execute("""
         CREATE TABLE IF NOT EXISTS authorized_users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,13 +60,17 @@ def initialize_database():
         );
     """)
 
-    # Add 4 accounts from original version
-    base_password = "D3ntalTech!@2025"
+    # DEFAULT USERS (4 ORIGIN + 2 NEW)
+    default_password = "D3ntalTech!@2025"
     default_users = [
-        ("denismeuret01@gmail.com", base_password),
-        ("isis.stouvenel@d3ntal-tech.fr", base_password),
-        ("contact@d3ntal-tech.fr", base_password),
-        ("admin@d3ntal-tech.fr", base_password),
+        ("denismeuret01@gmail.com", default_password),
+        ("isis.stouvenel@d3ntal-tech.fr", default_password),
+        ("contact@d3ntal-tech.fr", default_password),
+        ("admin@d3ntal-tech.fr", default_password),
+
+        # New accounts requested
+        ("denismeuret@d3ntal-tech.fr", default_password),
+        ("isis.42420@gmail.com", default_password)
     ]
 
     for email, pwd in default_users:
@@ -77,12 +83,11 @@ def initialize_database():
     conn.close()
 
 
-# ============================================
+# ===============================
 # UTILITIES
-# ============================================
+# ===============================
 def ensure_upload_folder():
-    if not os.path.exists(UPLOAD_BASE):
-        os.makedirs(UPLOAD_BASE, exist_ok=True)
+    os.makedirs(UPLOAD_BASE, exist_ok=True)
 
 
 def event_type_to_css(event_type):
@@ -100,9 +105,9 @@ def event_type_to_css(event_type):
     return "autre"
 
 
-# ============================================
-# LOGIN
-# ============================================
+# ===============================
+# LOGIN SYSTEM
+# ===============================
 @app.route("/")
 def index():
     return render_template("login.html")
@@ -122,8 +127,7 @@ def login():
     if user:
         session["user"] = email
         return redirect("/calendar")
-    else:
-        return render_template("login.html", error="Identifiants incorrects.")
+    return render_template("login.html", error="Identifiants incorrects.")
 
 
 @app.route("/logout")
@@ -132,9 +136,9 @@ def logout():
     return redirect("/")
 
 
-# ============================================
+# ===============================
 # CALENDAR VIEW
-# ============================================
+# ===============================
 @app.route("/calendar")
 def calendar_view():
     if "user" not in session:
@@ -145,7 +149,7 @@ def calendar_view():
     import calendar
     year = int(request.args.get("year", today.year))
     month = int(request.args.get("month", today.month))
-    cal = calendar.Calendar(firstweekday=0)
+    cal = calendar.Calendar()
 
     weeks = cal.monthdatescalendar(year, month)
 
@@ -156,7 +160,6 @@ def calendar_view():
     conn.close()
 
     events_by_date = {}
-
     for r in rows:
         d = r["event_date"]
         if d not in events_by_date:
@@ -183,6 +186,7 @@ def calendar_view():
             "css_class": event_type_to_css(r["event_type"])
         })
 
+    import calendar
     last_day = date(year, month, calendar.monthrange(year, month)[1])
 
     return render_template(
@@ -194,18 +198,18 @@ def calendar_view():
         year=year,
         month_name=date(year, month, 1).strftime("%B").capitalize(),
         next_month=(month % 12) + 1,
-        next_year=(year + 1) if month == 12 else year,
+        next_year=year + 1 if month == 12 else year,
         prev_month=(month - 2) % 12 + 1,
-        prev_year=(year - 1) if month == 1 else year,
+        prev_year=year - 1 if month == 1 else year,
         week_start=date(year, month, 1),
         week_end=last_day,
         week_summary={}
     )
 
 
-# ============================================
-# ADD EVENT
-# ============================================
+# ===============================
+# API ADD EVENT
+# ===============================
 @app.route("/api/add_event", methods=["POST"])
 def api_add_event():
     if "user" not in session:
@@ -217,19 +221,23 @@ def api_add_event():
     if not title:
         return jsonify({"status": "error", "message": "missing title"}), 400
 
-    event_date = data.get("event_date", "")
-    event_time = data.get("event_time", "00:00")
     event_type = data.get("event_type") or "Autre"
-    collaborators = data.get("collaborators", "")
-    priority = data.get("priority", "Normal")
-    notes = data.get("notes", "")
 
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO events (user_email, title, event_date, event_time, event_type, collaborators, priority, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (session["user"], title, event_date, event_time, event_type, collaborators, priority, notes))
+    """, (
+        session["user"],
+        title,
+        data.get("event_date", ""),
+        data.get("event_time", "00:00"),
+        event_type,
+        data.get("collaborators", ""),
+        data.get("priority", "Normal"),
+        data.get("notes", "")
+    ))
     conn.commit()
     new_id = cur.lastrowid
     conn.close()
@@ -237,9 +245,9 @@ def api_add_event():
     return jsonify({"status": "success", "event_id": new_id})
 
 
-# ============================================
-# UPDATE EVENT
-# ============================================
+# ===============================
+# API UPDATE EVENT
+# ===============================
 @app.route("/api/update_event", methods=["POST"])
 def api_update_event():
     if "user" not in session:
@@ -272,9 +280,9 @@ def api_update_event():
     return jsonify({"status": "success"})
 
 
-# ============================================
-# DELETE EVENT
-# ============================================
+# ===============================
+# API DELETE EVENT
+# ===============================
 @app.route("/api/delete_event", methods=["POST"])
 def api_delete_event():
     if "user" not in session:
@@ -292,9 +300,9 @@ def api_delete_event():
     return jsonify({"status": "success"})
 
 
-# ============================================
+# ===============================
 # UPLOAD FILES
-# ============================================
+# ===============================
 @app.route("/upload_files", methods=["POST"])
 def upload_files():
     if "user" not in session:
@@ -336,26 +344,26 @@ def upload_files():
     return jsonify({"status": "success"})
 
 
-# ============================================
+# ===============================
 # DOWNLOAD FILE
-# ============================================
+# ===============================
 @app.route("/download_file/<path:rel_path>")
 def download_file(rel_path):
     folder, filename = os.path.split(rel_path)
     return send_from_directory(os.path.join(UPLOAD_BASE, folder), filename, as_attachment=True)
 
 
-# ============================================
+# ===============================
 # AUTO DB INIT AT STARTUP
-# ============================================
+# ===============================
 try:
     initialize_database()
 except Exception as e:
     print("Erreur lors de l'initialisation DB:", e)
 
 
-# ============================================
+# ===============================
 # RUN
-# ============================================
+# ===============================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
