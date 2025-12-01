@@ -1,7 +1,7 @@
 import os
 import json
 import sqlite3
-from datetime import date, datetime
+from datetime import date
 from flask import Flask, render_template, request, redirect, jsonify, session, send_from_directory, Response
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ UPLOAD_BASE = "/var/data/uploads"
 
 
 # ============================================
-#  DATABASE CONNECTION
+# DATABASE CONNECTION
 # ============================================
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -22,17 +22,13 @@ def get_db_connection():
 
 
 # ============================================
-#  INIT DB (automatique au démarrage)
+# INIT DATABASE (auto) — authorized_users + events + files
 # ============================================
 def initialize_database():
-    """
-    Initialise la base: events, authorized_users, colonne files, et
-    recrée les 4 utilisateurs avec MDP original.
-    """
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # TABLE EVENTS
+    # EVENTS table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,13 +43,13 @@ def initialize_database():
         );
     """)
 
-    # Ajout colonne files si absente
+    # Add "files" column if missing
     cur.execute("PRAGMA table_info(events);")
     columns = [row[1] for row in cur.fetchall()]
     if "files" not in columns:
         cur.execute("ALTER TABLE events ADD COLUMN files TEXT;")
 
-    # TABLE authorized_users
+    # AUTHORIZED_USERS table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS authorized_users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,13 +58,15 @@ def initialize_database():
         );
     """)
 
-    # Ajout des 4 emails comme avant
+    # Add 4 accounts from original version
+    base_password = "D3ntalTech!@2025"
     default_users = [
-        ("denismeuret01@gmail.com",        "D3ntalTech!@2025"),
-        ("isis.stouvenel@d3ntal-tech.fr",  "D3ntalTech!@2025"),
-        ("contact@d3ntal-tech.fr",         "D3ntalTech!@2025"),
-        ("admin@d3ntal-tech.fr",           "D3ntalTech!@2025")
+        ("denismeuret01@gmail.com", base_password),
+        ("isis.stouvenel@d3ntal-tech.fr", base_password),
+        ("contact@d3ntal-tech.fr", base_password),
+        ("admin@d3ntal-tech.fr", base_password),
     ]
+
     for email, pwd in default_users:
         cur.execute("""
             INSERT OR IGNORE INTO authorized_users (email, password)
@@ -80,7 +78,7 @@ def initialize_database():
 
 
 # ============================================
-#  UTILS
+# UTILITIES
 # ============================================
 def ensure_upload_folder():
     if not os.path.exists(UPLOAD_BASE):
@@ -118,10 +116,10 @@ def login():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT * FROM authorized_users WHERE email = ? AND password = ?", (email, password))
-    row = cur.fetchone()
+    user = cur.fetchone()
     conn.close()
 
-    if row:
+    if user:
         session["user"] = email
         return redirect("/calendar")
     else:
@@ -161,7 +159,6 @@ def calendar_view():
 
     for r in rows:
         d = r["event_date"]
-
         if d not in events_by_date:
             events_by_date[d] = []
 
@@ -222,12 +219,7 @@ def api_add_event():
 
     event_date = data.get("event_date", "")
     event_time = data.get("event_time", "00:00")
-    event_type = data.get("event_type") or ""
-
-    # Correction : si vide => "Autre"
-    if not event_type.strip():
-        event_type = "Autre"
-
+    event_type = data.get("event_type") or "Autre"
     collaborators = data.get("collaborators", "")
     priority = data.get("priority", "Normal")
     notes = data.get("notes", "")
@@ -256,9 +248,7 @@ def api_update_event():
     data = request.get_json(force=True)
     event_id = data.get("event_id")
 
-    event_type = data.get("event_type") or ""
-    if not event_type.strip():
-        event_type = "Autre"
+    event_type = data.get("event_type") or "Autre"
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -356,12 +346,12 @@ def download_file(rel_path):
 
 
 # ============================================
-# AUTO-INIT DB AU DÉMARRAGE (IMPORTANT)
+# AUTO DB INIT AT STARTUP
 # ============================================
 try:
     initialize_database()
 except Exception as e:
-    print("Erreur during DB init:", e)
+    print("Erreur lors de l'initialisation DB:", e)
 
 
 # ============================================
