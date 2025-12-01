@@ -336,7 +336,7 @@ body {
 }
 
 /* ================================
-   ✔ ALIGNEMENT COLLABORATEURS (DÉFINITIF)
+   ✔ ALIGNEMENT COLLABORATEURS
 ================================ */
 .collab-title {
     margin-top: 10px;
@@ -348,26 +348,29 @@ body {
 .collab-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     margin: 8px 0 12px 0;
 }
 
-/* Correction ABSOLUE — écrase tous les styles concurrents */
+/* Alignement ABSOLU */
 .collab-group label {
     display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
     gap: 12px !important;
+    line-height: 1.4;
     font-size: 15px;
     color: #333;
 }
 
 .collab-checkbox {
-    width: 18px;
-    height: 18px;
-    margin: 0;
+    width: 18px !important;
+    height: 18px !important;
+    flex-shrink: 0;
     cursor: pointer;
 }
 
 .collab-group input[type="checkbox"] {
-    display: inline-block;
+    display: inline-block !important;
+    vertical-align: middle !important;
 }
