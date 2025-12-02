@@ -2,9 +2,9 @@ import os
 import json
 import sqlite3
 import smtplib
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.mime_text import MIMEText
 
 from flask import (
     Flask,
@@ -16,33 +16,36 @@ from flask import (
     send_from_directory,
 )
 
+# =====================================
+# FLASK APP
+# =====================================
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = "CHANGE_ME"
 
-# ===============================
-# DATABASE USING RENDER DISK
-# ===============================
-DB_PATH = "/var/data/events.db"   # <- DISQUE PERSISTANT RENDER
-UPLOAD_BASE = "/var/data/uploads" # <- dossiers fichiers persistants
+# =====================================
+# PATHS (RENDER DISK)
+# =====================================
+DB_PATH = "/var/data/events.db"      # base SQLite sur disque persistant
+UPLOAD_BASE = "/var/data/uploads"    # pièces jointes sur disque persistant
 
 
-# ===============================
+# =====================================
 # DATABASE CONNECTION
-# ===============================
+# =====================================
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# ===============================
+# =====================================
 # INITIALIZE DATABASE (AUTO)
-# ===============================
+# =====================================
 def initialize_database():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # TABLE EVENTS
+    # Table des événements
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS events (
@@ -59,13 +62,13 @@ def initialize_database():
         """
     )
 
-    # Add "files" column if missing
+    # Ajout de la colonne "files" si manquante
     cur.execute("PRAGMA table_info(events);")
     columns = [row[1] for row in cur.fetchall()]
     if "files" not in columns:
         cur.execute("ALTER TABLE events ADD COLUMN files TEXT;")
 
-    # TABLE authorized_users
+    # Table des utilisateurs autorisés
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS authorized_users (
@@ -76,14 +79,13 @@ def initialize_database():
         """
     )
 
-    # DEFAULT USERS (4 ORIGIN + 2 NEW)
+    # Comptes par défaut
     default_password = "D3ntalTech!@2025"
     default_users = [
         ("denismeuret01@gmail.com", default_password),
         ("isis.stouvenel@d3ntal-tech.fr", default_password),
         ("contact@d3ntal-tech.fr", default_password),
         ("admin@d3ntal-tech.fr", default_password),
-        # New accounts
         ("denismeuret@d3ntal-tech.fr", default_password),
         ("isis.42420@gmail.com", default_password),
     ]
@@ -101,9 +103,9 @@ def initialize_database():
     conn.close()
 
 
-# ===============================
-# UTILITIES
-# ===============================
+# =====================================
+# UTILS
+# =====================================
 def ensure_upload_folder():
     os.makedirs(UPLOAD_BASE, exist_ok=True)
 
@@ -123,12 +125,12 @@ def event_type_to_css(event_type: str) -> str:
     return "autre"
 
 
-# ===============================
+# =====================================
 # EMAIL UTILITIES
-# ===============================
+# =====================================
 def send_event_email(subject: str, html_content: str):
     """
-    Envoi d'un email HTML pour les événements (création / modification / suppression).
+    Envoi d'un email HTML pour les événements (création / modification / suppression / rappel).
     Utilise les variables d'environnement :
     SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD.
     """
@@ -214,9 +216,9 @@ def build_event_email(
     return html
 
 
-# ===============================
+# =====================================
 # LOGIN SYSTEM
-# ===============================
+# =====================================
 @app.route("/")
 def index():
     return render_template("login.html")
@@ -239,6 +241,7 @@ def login():
     if user:
         session["user"] = email
         return redirect("/calendar")
+
     return render_template("login.html", error="Identifiants incorrects.")
 
 
@@ -248,9 +251,9 @@ def logout():
     return redirect("/")
 
 
-# ===============================
+# =====================================
 # CALENDAR VIEW
-# ===============================
+# =====================================
 @app.route("/calendar")
 def calendar_view():
     if "user" not in session:
@@ -275,7 +278,7 @@ def calendar_view():
     rows = cur.fetchall()
     conn.close()
 
-    # --------- EVENTS BY DATE (POUR LES CASES DU CALENDRIER) ----------
+    # ----- EVENTS BY DATE (pour les cases du calendrier) -----
     events_by_date = {}
     for r in rows:
         d_str = r["event_date"]
@@ -305,11 +308,10 @@ def calendar_view():
             }
         )
 
-    # --------- RÉCAPITULATIF DU MOIS (week_summary) ----------
-    # week_summary est un dict : { date_iso: { "date": date_obj, "events": [ ... ] } }
+    # ----- Récapitulatif du mois (week_summary) -----
     month_summary = {}
     for r in rows:
-        d_iso = r["event_date"]  # ex: '2025-11-30'
+        d_iso = r["event_date"]
         if not d_iso:
             continue
         if d_iso not in month_summary:
@@ -330,7 +332,7 @@ def calendar_view():
             }
         )
 
-    # Dates limites pour le titre du récap
+    # Limites pour le récap mensuel
     last_day_number = calendar.monthrange(year, month)[1]
     week_start = date(year, month, 1)
     week_end = date(year, month, last_day_number)
@@ -353,9 +355,9 @@ def calendar_view():
     )
 
 
-# ===============================
+# =====================================
 # API ADD EVENT
-# ===============================
+# =====================================
 @app.route("/api/add_event", methods=["POST"])
 def api_add_event():
     if "user" not in session:
@@ -397,7 +399,7 @@ def api_add_event():
     new_id = cur.lastrowid
     conn.close()
 
-    # ------- EMAIL : NOUVEL ÉVÉNEMENT -------
+    # Email "nouvel événement"
     html = build_event_email(
         "Nouvel événement",
         title,
@@ -414,9 +416,9 @@ def api_add_event():
     return jsonify({"status": "success", "event_id": new_id})
 
 
-# ===============================
+# =====================================
 # API UPDATE EVENT
-# ===============================
+# =====================================
 @app.route("/api/update_event", methods=["POST"])
 def api_update_event():
     if "user" not in session:
@@ -458,7 +460,7 @@ def api_update_event():
     conn.commit()
     conn.close()
 
-    # ------- EMAIL : ÉVÉNEMENT MODIFIÉ -------
+    # Email "événement modifié"
     html = build_event_email(
         "Événement modifié",
         title,
@@ -475,9 +477,9 @@ def api_update_event():
     return jsonify({"status": "success"})
 
 
-# ===============================
+# =====================================
 # API DELETE EVENT
-# ===============================
+# =====================================
 @app.route("/api/delete_event", methods=["POST"])
 def api_delete_event():
     if "user" not in session:
@@ -516,17 +518,19 @@ def api_delete_event():
     return jsonify({"status": "success"})
 
 
-# ===============================
+# =====================================
 # UPLOAD FILES
-# ===============================
+# =====================================
 @app.route("/upload_files", methods=["POST"])
 def upload_files():
     if "user" not in session:
         return jsonify({"status": "error"}), 403
 
     event_id = request.form.get("event_id")
-    ensure_upload_folder()
+    if not event_id:
+        return jsonify({"status": "error", "message": "missing event_id"}), 400
 
+    ensure_upload_folder()
     event_folder = os.path.join(UPLOAD_BASE, str(event_id))
     os.makedirs(event_folder, exist_ok=True)
 
@@ -535,6 +539,8 @@ def upload_files():
     if "files" in request.files:
         for f in request.files.getlist("files"):
             filename = f.filename
+            if not filename:
+                continue
             final_path = os.path.join(event_folder, filename)
             f.save(final_path)
             uploaded_paths.append(f"{event_id}/{filename}")
@@ -563,9 +569,9 @@ def upload_files():
     return jsonify({"status": "success"})
 
 
-# ===============================
+# =====================================
 # DOWNLOAD FILE
-# ===============================
+# =====================================
 @app.route("/download_file/<path:rel_path>")
 def download_file(rel_path):
     folder, filename = os.path.split(rel_path)
@@ -574,64 +580,9 @@ def download_file(rel_path):
     )
 
 
-# ===============================
-# DAILY REMINDER LOGIC
-# ===============================
-def send_daily_reminders():
-    """
-    Envoie un e-mail de rappel pour tous les événements prévus demain.
-    Utilise la même configuration SMTP et les mêmes destinataires que les autres notifications.
-    """
-    tomorrow = date.today() + timedelta(days=1)
-    tomorrow_str = tomorrow.isoformat()
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM events WHERE event_date = ?", (tomorrow_str,))
-    rows = cur.fetchall()
-    conn.close()
-
-    if not rows:
-        print("DAILY REMINDER: aucun événement pour demain.")
-        return 0
-
-    count = 0
-    for row in rows:
-        html = build_event_email(
-            "Rappel : événement demain",
-            row["title"],
-            row["event_date"],
-            row["event_time"],
-            row["event_type"],
-            row["collaborators"],
-            row["priority"],
-            row["notes"],
-            row["user_email"],
-        )
-        subject = f"D3NTAL TECH — Rappel pour demain : {row['title']}"
-        send_event_email(subject, html)
-        count += 1
-
-    print(f"DAILY REMINDER: {count} rappel(s) envoyé(s) pour le {tomorrow_str}.")
-    return count
-
-
-@app.route("/internal/daily_reminder_job")
-def daily_reminder_job():
-    """
-    Route appelée par le cron Render une fois par jour.
-    Elle déclenche l'envoi des rappels d'événements pour le lendemain.
-    """
-    try:
-        sent = send_daily_reminders()
-        return jsonify({"status": "ok", "reminders_sent": sent})
-    except Exception as e:
-        print("DAILY REMINDER ERROR:", e)
-        return jsonify({"status": "error", "message": str(e)}), 500
-        
-# ===============================
+# =====================================
 # AUTO DB INIT AT STARTUP
-# ===============================
+# =====================================
 try:
     initialize_database()
 except Exception as e:
@@ -641,8 +592,6 @@ except Exception as e:
 # ---------------------------------------------------------
 # LOGIQUE INTERNE — CHECK_REMINDERS (rappel automatique 24h avant)
 # ---------------------------------------------------------
-from datetime import datetime, timedelta
-
 def check_reminders():
     """
     Vérifie les événements et envoie un email 24h avant.
@@ -662,7 +611,6 @@ def check_reminders():
 
     for ev in events:
         if ev["event_date"] == tomorrow_str:
-
             html = build_event_email(
                 "Rappel — Événement demain",
                 ev["title"],
@@ -674,7 +622,6 @@ def check_reminders():
                 ev["notes"],
                 ev["user_email"],
             )
-
             send_event_email("D3NTAL TECH — Rappel 24h", html)
             reminders_sent += 1
 
@@ -684,9 +631,6 @@ def check_reminders():
 # ---------------------------------------------------------
 # ROUTE API POUR LE CRON EXTERNE
 # ---------------------------------------------------------
-from flask import jsonify, request
-import os
-
 @app.route("/api/check-reminders")
 def api_check_reminders():
     key = request.args.get("key")
@@ -704,8 +648,19 @@ def api_check_reminders():
     })
 
 
-# ===============================
+# =====================================
 # RUN
-# ===============================
+# =====================================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    import sys
+
+    # Mode CLI pour un cron Render éventuel : python app.py --check-reminders
+    if "--check-reminders" in sys.argv:
+        try:
+            initialize_database()
+        except Exception as e:
+            print("Erreur lors de l'initialisation DB:", e)
+        sent = check_reminders()
+        print(f"Rappels envoyés: {sent}")
+    else:
+        app.run(host="0.0.0.0", port=10000)
