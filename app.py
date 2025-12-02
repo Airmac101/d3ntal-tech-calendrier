@@ -4,7 +4,7 @@ import sqlite3
 import smtplib
 from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
-from email.mime_text import MIMEText
+from email.mime.text import MIMEText   # <-- CORRECTION ICI
 
 from flask import (
     Flask,
@@ -129,22 +129,15 @@ def event_type_to_css(event_type: str) -> str:
 # EMAIL UTILITIES
 # =====================================
 def send_event_email(subject: str, html_content: str):
-    """
-    Envoi d'un email HTML pour les événements (création / modification / suppression / rappel).
-    Utilise les variables d'environnement :
-    SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD.
-    """
     smtp_server = os.environ.get("SMTP_SERVER")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
     smtp_user = os.environ.get("SMTP_USER")
     smtp_password = os.environ.get("SMTP_PASSWORD")
 
-    # Si la config SMTP est incomplète, on log et on ne plante pas l'appli
     if not smtp_server or not smtp_user or not smtp_password:
         print("EMAIL WARNING: SMTP configuration incomplete, email not sent.")
         return
 
-    # Destinataires fixes (adaptables)
     recipients = [
         "denismeuret@d3ntal-tech.fr",
         "isis.stouvenel@d3ntal-tech.fr",
@@ -178,9 +171,7 @@ def build_event_email(
     notes: str,
     user_email: str,
 ) -> str:
-    """
-    Gabarit HTML pour les emails d'événement (style Notion-like).
-    """
+
     collaborators = collaborators or ""
     notes = notes or ""
     priority = priority or "Normal"
@@ -278,7 +269,6 @@ def calendar_view():
     rows = cur.fetchall()
     conn.close()
 
-    # ----- EVENTS BY DATE (pour les cases du calendrier) -----
     events_by_date = {}
     for r in rows:
         d_str = r["event_date"]
@@ -308,7 +298,6 @@ def calendar_view():
             }
         )
 
-    # ----- Récapitulatif du mois (week_summary) -----
     month_summary = {}
     for r in rows:
         d_iso = r["event_date"]
@@ -332,7 +321,6 @@ def calendar_view():
             }
         )
 
-    # Limites pour le récap mensuel
     last_day_number = calendar.monthrange(year, month)[1]
     week_start = date(year, month, 1)
     week_end = date(year, month, last_day_number)
@@ -399,7 +387,6 @@ def api_add_event():
     new_id = cur.lastrowid
     conn.close()
 
-    # Email "nouvel événement"
     html = build_event_email(
         "Nouvel événement",
         title,
@@ -460,7 +447,6 @@ def api_update_event():
     conn.commit()
     conn.close()
 
-    # Email "événement modifié"
     html = build_event_email(
         "Événement modifié",
         title,
@@ -493,7 +479,6 @@ def api_delete_event():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # On récupère l'événement avant suppression pour l'email
     cur.execute("SELECT * FROM events WHERE id=?", (event_id,))
     row = cur.fetchone()
 
@@ -589,14 +574,10 @@ except Exception as e:
     print("Erreur lors de l'initialisation DB:", e)
 
 
-# ---------------------------------------------------------
-# LOGIQUE INTERNE — CHECK_REMINDERS (rappel automatique 24h avant)
-# ---------------------------------------------------------
+# ============================================================
+# REMINDER 24H
+# ============================================================
 def check_reminders():
-    """
-    Vérifie les événements et envoie un email 24h avant.
-    Retourne le nombre de rappels envoyés.
-    """
     reminders_sent = 0
 
     conn = get_db_connection()
@@ -628,24 +609,18 @@ def check_reminders():
     return reminders_sent
 
 
-# ---------------------------------------------------------
-# ROUTE API POUR LE CRON EXTERNE
-# ---------------------------------------------------------
+# ============================================================
+# API /api/check-reminders
+# ============================================================
 @app.route("/api/check-reminders")
 def api_check_reminders():
     key = request.args.get("key")
 
-    # Sécurité : clé obligatoire
     if key != os.getenv("REMINDER_KEY", "mySuperReminderKey2025"):
         return jsonify({"error": "Unauthorized"}), 401
 
-    # Exécuter le rappel interne
     result = check_reminders()
-
-    return jsonify({
-        "status": "ok",
-        "reminders_sent": result
-    })
+    return jsonify({"status": "ok", "reminders_sent": result})
 
 
 # =====================================
@@ -654,7 +629,6 @@ def api_check_reminders():
 if __name__ == "__main__":
     import sys
 
-    # Mode CLI pour un cron Render éventuel : python app.py --check-reminders
     if "--check-reminders" in sys.argv:
         try:
             initialize_database()
