@@ -638,6 +638,36 @@ try:
 except Exception as e:
     print("Erreur lors de l'initialisation DB:", e)
 
+# ===============================
+# AUTO DB INIT AT STARTUP
+# ===============================
+try:
+    initialize_database()
+except Exception as e:
+    print("Erreur lors de l'initialisation DB:", e)
+
+# ---------------------------------------------------------
+# ROUTE API POUR LE CRON EXTERNE
+# ---------------------------------------------------------
+from flask import jsonify, request
+import os
+
+@app.route("/api/check-reminders")
+def api_check_reminders():
+    key = request.args.get("key")
+
+    # Sécurité : clé obligatoire
+    if key != os.getenv("REMINDER_KEY", "mySuperReminderKey2025"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Exécuter le rappel interne
+    result = check_reminders()
+
+    return jsonify({
+        "status": "ok",
+        "reminders_sent": result
+    })
+
 
 # ===============================
 # RUN
