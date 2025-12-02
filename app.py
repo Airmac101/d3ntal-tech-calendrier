@@ -628,8 +628,7 @@ def daily_reminder_job():
     except Exception as e:
         print("DAILY REMINDER ERROR:", e)
         return jsonify({"status": "error", "message": str(e)}), 500
-
-
+        
 # ===============================
 # AUTO DB INIT AT STARTUP
 # ===============================
@@ -638,13 +637,49 @@ try:
 except Exception as e:
     print("Erreur lors de l'initialisation DB:", e)
 
-# ===============================
-# AUTO DB INIT AT STARTUP
-# ===============================
-try:
-    initialize_database()
-except Exception as e:
-    print("Erreur lors de l'initialisation DB:", e)
+
+# ---------------------------------------------------------
+# LOGIQUE INTERNE — CHECK_REMINDERS (rappel automatique 24h avant)
+# ---------------------------------------------------------
+from datetime import datetime, timedelta
+
+def check_reminders():
+    """
+    Vérifie les événements et envoie un email 24h avant.
+    Retourne le nombre de rappels envoyés.
+    """
+    reminders_sent = 0
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM events")
+    events = cur.fetchall()
+    conn.close()
+
+    now = datetime.now()
+    tomorrow = now + timedelta(days=1)
+    tomorrow_str = tomorrow.strftime("%Y-%m-%d")
+
+    for ev in events:
+        if ev["event_date"] == tomorrow_str:
+
+            html = build_event_email(
+                "Rappel — Événement demain",
+                ev["title"],
+                ev["event_date"],
+                ev["event_time"],
+                ev["event_type"],
+                ev["collaborators"],
+                ev["priority"],
+                ev["notes"],
+                ev["user_email"],
+            )
+
+            send_event_email("D3NTAL TECH — Rappel 24h", html)
+            reminders_sent += 1
+
+    return reminders_sent
+
 
 # ---------------------------------------------------------
 # ROUTE API POUR LE CRON EXTERNE
